@@ -2,16 +2,18 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>SIU VIP - Hệ Thống Điểm Danh & Lớp Học</title>
   <style>
     :root {
       --primary: #1e3a8a;
+      --primary-accent: #2563eb;
       --primary-light: #3b82f6;
-      --accent: #f59e0b;
-      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #030712 100%);
-      --card-bg: rgba(255, 255, 255, 0.96);
-      --card-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+      --neon-cyan: #38bdf8;
+      --bg-dark: #070d18;
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --card-border: rgba(255, 255, 255, 0.8);
+      --card-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.45), 0 0 40px rgba(37, 99, 235, 0.15);
       --text-main: #0f172a;
       --text-muted: #64748b;
       --success: #10b981;
@@ -29,7 +31,7 @@
 
     body {
       min-height: 100vh;
-      background: var(--bg-gradient);
+      background: radial-gradient(circle at 50% 15%, #1e1b4b 0%, #0c1222 55%, var(--bg-dark) 100%);
       color: var(--text-main);
       display: flex;
       flex-direction: column;
@@ -37,55 +39,57 @@
       justify-content: center;
       position: relative;
       overflow-x: hidden;
-      padding: 16px;
+      padding: 20px 16px;
     }
 
-    /* Lưới Cyber nền nhẹ */
+    /* Lưới Cyber đa tầng ánh sáng */
     body::before {
       content: "";
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
       background-image: 
+        radial-gradient(circle at 50% 20%, rgba(56, 189, 248, 0.12) 0%, transparent 60%),
         linear-gradient(rgba(59, 130, 246, 0.05) 1px, transparent 1px),
         linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
-      background-size: 36px 36px;
+      background-size: 100% 100%, 36px 36px, 36px 36px;
       pointer-events: none;
       z-index: 0;
     }
 
     .container {
       width: 100%;
-      max-width: 480px;
+      max-width: 440px;
       position: relative;
       z-index: 10;
     }
 
     /* ========================================================
-       MASCOT COMPONENT - THIẾT KẾ ĐA LỚP & NỘI SUY MƯỢT
+       MASCOT COMPONENT - CHUYỂN ĐỘNG LINH HOẠT 60FPS
        ======================================================== */
-    .mascot-wrapper {
+    .mascot-stage {
       position: relative;
-      width: 240px;
-      height: 240px;
-      margin: 0 auto -20px auto;
+      width: 250px;
+      height: 250px;
+      margin: 0 auto -28px auto;
       z-index: 20;
+      pointer-events: none;
       will-change: transform;
-      animation: catBreathe 3.2s ease-in-out infinite;
+      animation: catBreath 3.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
       transform-origin: bottom center;
     }
 
-    @keyframes catBreathe {
+    @keyframes catBreath {
       0%, 100% {
         transform: translateY(0px) scale(1, 1);
       }
       50% {
-        transform: translateY(-4px) scale(1.008, 0.995);
+        transform: translateY(-4px) scale(1.012, 0.992);
       }
     }
 
     .mascot-squash {
-      transform: scale(1.03, 0.96) translateY(2px) !important;
-      transition: transform 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      transform: scale(1.04, 0.95) translateY(3px) !important;
+      transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
     .mascot-inner {
@@ -93,9 +97,10 @@
       width: 100%;
       height: 100%;
       will-change: transform;
+      transform-origin: 50% 75%;
     }
 
-    /* Các lớp sprite tư thế (cross-fade bằng opacity) */
+    /* Các tư thế lớp sprite - Cross-fade mượt bằng opacity 180ms */
     .sprite-layer {
       position: absolute;
       top: 0;
@@ -105,7 +110,7 @@
       object-fit: contain;
       pointer-events: none;
       opacity: 0;
-      transition: opacity 0.18s ease;
+      transition: opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1);
       will-change: opacity;
     }
 
@@ -113,7 +118,7 @@
       opacity: 1;
     }
 
-    /* Đôi mắt động */
+    /* ĐÔI MẮT NHÌN THEO - TỈ LỆ CHUẨN 1024x1024 ĐÃ ĐO ĐẠC PIXEL */
     .eye-layer-container {
       position: absolute;
       top: 0;
@@ -122,93 +127,119 @@
       height: 100%;
       pointer-events: none;
       z-index: 5;
+      transition: opacity 0.15s ease;
     }
 
-    /* Hốc mắt clip để tròng không bị tràn ra ngoài da */
     .eye-socket {
       position: absolute;
-      overflow: hidden;
+      width: 10.15%;  /* 104px / 1024px */
+      height: 10.15%; /* 104px / 1024px */
       border-radius: 50%;
-      pointer-events: none;
+      overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
+      pointer-events: none;
     }
 
-    /* Kích thước theo tỉ lệ chuẩn 1600x1600 */
+    /* Tâm mắt trái (412, 442) -> left: 412 - 52 = 360 (35.15%), top: 442 - 52 = 390 (38.08%) */
     .eye-socket.left {
-      left: calc((642 - 75) / 1600 * 100%);
-      top: calc((687 - 80) / 1600 * 100%);
-      width: calc(150 / 1600 * 100%);
-      height: calc(160 / 1600 * 100%);
+      left: 35.15%;
+      top: 38.08%;
     }
 
+    /* Tâm mắt phải (612, 442) -> left: 612 - 52 = 560 (54.68%), top: 38.08% */
     .eye-socket.right {
-      left: calc((960 - 75) / 1600 * 100%);
-      top: calc((692 - 80) / 1600 * 100%);
-      width: calc(150 / 1600 * 100%);
-      height: calc(160 / 1600 * 100%);
+      left: 54.68%;
+      top: 38.08%;
     }
 
     .iris-pupil {
       position: absolute;
-      width: 78%;
-      height: 78%;
+      width: 80%;
+      height: 80%;
       object-fit: contain;
       will-change: transform;
       transform: translate3d(0, 0, 0);
-      filter: drop-shadow(0 0 2px rgba(30, 58, 138, 0.4));
+      filter: drop-shadow(0 0 2px rgba(30, 58, 138, 0.45));
+      border-radius: 50%;
     }
 
     /* ========================================================
-       CARD & FORM STYLES
+       LOGIN CARD GLASSMORPHISM HIỆN ĐẠI
        ======================================================== */
     .card {
       background: var(--card-bg);
-      border-radius: 28px;
+      border-radius: 32px;
       box-shadow: var(--card-shadow);
-      padding: 36px 30px 28px 30px;
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.6);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      padding: 40px 32px 32px 32px;
+      backdrop-filter: blur(20px);
+      border: 1.5px solid var(--card-border);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
     }
 
-    .header-logo {
+    .card-header {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      gap: 12px;
-      margin-bottom: 24px;
+      margin-bottom: 26px;
     }
 
-    .header-logo img {
-      width: 44px;
-      height: 44px;
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(37, 99, 235, 0.08);
+      border: 1px solid rgba(37, 99, 235, 0.18);
+      padding: 6px 16px;
+      border-radius: 999px;
+      margin-bottom: 12px;
+    }
+
+    .brand-badge img {
+      width: 22px;
+      height: 22px;
       object-fit: contain;
     }
 
-    .header-logo h1 {
-      font-size: 20px;
-      font-weight: 800;
-      color: #0f172a;
-      letter-spacing: -0.5px;
+    .brand-badge span {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--primary-accent);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
     }
 
-    .header-logo h1 span {
-      color: #2563eb;
+    .card-header h1 {
+      font-size: 23px;
+      font-weight: 800;
+      color: var(--text-main);
+      letter-spacing: -0.6px;
+    }
+
+    .card-header p {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      margin-top: 4px;
     }
 
     .input-group {
       margin-bottom: 18px;
-      position: relative;
     }
 
     .input-group label {
-      display: block;
+      display: flex;
+      justify-content: space-between;
       font-size: 13px;
-      font-weight: 600;
-      color: #475569;
-      margin-bottom: 8px;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 7px;
+    }
+
+    .input-group label .badge-req {
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 500;
     }
 
     .input-wrapper {
@@ -221,20 +252,20 @@
       width: 100%;
       height: 52px;
       padding: 0 18px;
-      border-radius: 14px;
-      border: 1.5px solid #cbd5e1;
+      border-radius: 16px;
+      border: 1.5px solid #e2e8f0;
       background: #f8fafc;
       font-size: 15px;
-      font-weight: 500;
+      font-weight: 600;
       color: #0f172a;
       outline: none;
-      transition: all 0.2s ease;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .input-wrapper input:focus {
-      border-color: #2563eb;
+      border-color: var(--primary-accent);
       background: #ffffff;
-      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+      box-shadow: 0 0 0 4.5px rgba(37, 99, 235, 0.14);
     }
 
     .remember-row {
@@ -249,16 +280,18 @@
     .remember-label {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 9px;
       cursor: pointer;
       user-select: none;
+      font-weight: 500;
     }
 
     .remember-label input[type="checkbox"] {
       width: 18px;
       height: 18px;
-      accent-color: #2563eb;
+      accent-color: var(--primary-accent);
       cursor: pointer;
+      border-radius: 6px;
     }
 
     .btn-submit {
@@ -267,12 +300,12 @@
       background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
       color: white;
       border: none;
-      border-radius: 14px;
+      border-radius: 16px;
       font-size: 16px;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
+      box-shadow: 0 10px 24px -4px rgba(37, 99, 235, 0.45);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -281,7 +314,7 @@
 
     .btn-submit:hover {
       transform: translateY(-2px);
-      box-shadow: 0 12px 24px rgba(37, 99, 235, 0.45);
+      box-shadow: 0 14px 28px -4px rgba(37, 99, 235, 0.55);
     }
 
     .btn-submit:active {
@@ -289,54 +322,53 @@
     }
 
     .btn-submit:disabled {
-      opacity: 0.7;
+      opacity: 0.75;
       cursor: not-allowed;
       transform: none;
     }
 
-    /* Loading Running Line */
+    /* Hiệu ứng tia chạy và vạch tốc độ */
     .loading-notice {
       display: none;
       margin-top: 18px;
       text-align: center;
       font-size: 13.5px;
-      color: #3b82f6;
-      font-weight: 600;
-      animation: pulseText 1.5s infinite;
+      color: var(--primary-accent);
+      font-weight: 700;
+      animation: pulseNotice 1.4s ease-in-out infinite;
     }
 
-    @keyframes pulseText {
-      0%, 100% { opacity: 0.6; }
-      50% { opacity: 1; }
+    @keyframes pulseNotice {
+      0%, 100% { opacity: 0.6; transform: scale(0.99); }
+      50% { opacity: 1; transform: scale(1.01); }
     }
 
     .error-msg {
       display: none;
       margin-top: 14px;
-      padding: 10px 14px;
+      padding: 12px 16px;
       background: #fef2f2;
       border: 1px solid #fee2e2;
-      border-radius: 12px;
+      border-radius: 14px;
       color: #dc2626;
       font-size: 13px;
       text-align: center;
-      font-weight: 500;
+      font-weight: 600;
     }
 
-    /* Rung lắc khi báo lỗi */
     .shake {
-      animation: shakeCard 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+      animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
     }
 
-    @keyframes shakeCard {
-      10%, 90% { transform: translate3d(-2px, 0, 0); }
-      20%, 80% { transform: translate3d(4px, 0, 0); }
-      30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
-      40%, 60% { transform: translate3d(6px, 0, 0); }
+    @keyframes shake {
+      10%, 90% { transform: translate3d(-3px, 0, 0); }
+      20%, 80% { transform: translate3d(5px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-7px, 0, 0); }
+      40%, 60% { transform: translate3d(7px, 0, 0); }
     }
 
     /* ========================================================
-       CYBER TRANSITION SCREEN (MÀN CHUYỂN CẢNH)
+       CYBER TRANSITION SCREEN CHUYÊN NGHIỆP
        ======================================================== */
     #cyber-screen {
       position: fixed;
@@ -348,7 +380,7 @@
       align-items: center;
       justify-content: center;
       opacity: 0;
-      transition: opacity 0.4s ease;
+      transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     #cyber-screen.active {
@@ -358,8 +390,8 @@
 
     .cyber-portal {
       position: relative;
-      width: 220px;
-      height: 220px;
+      width: 260px;
+      height: 260px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -368,126 +400,131 @@
     .cyber-ring {
       position: absolute;
       border-radius: 50%;
-      border: 2px dashed rgba(59, 130, 246, 0.4);
-      animation: rotateRing 14s linear infinite;
+      border: 2px dashed rgba(56, 189, 248, 0.35);
+      animation: spinRing 16s linear infinite;
     }
 
     .cyber-ring.r1 { width: 100%; height: 100%; }
-    .cyber-ring.r2 { width: 125%; height: 125%; border-style: dotted; border-color: rgba(99, 102, 241, 0.3); animation-duration: 22s; animation-direction: reverse; }
+    .cyber-ring.r2 { 
+      width: 130%; height: 130%; 
+      border-style: dotted; 
+      border-color: rgba(99, 102, 241, 0.3); 
+      animation-duration: 24s; 
+      animation-direction: reverse; 
+    }
 
-    @keyframes rotateRing {
+    @keyframes spinRing {
       from { transform: rotate(0deg); }
       to { transform: rotate(360deg); }
     }
 
-    .cyber-btn {
-      width: 140px;
-      height: 140px;
+    .cyber-core-btn {
+      width: 150px;
+      height: 150px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #1e293b, #0f172a);
-      border: 3px solid #38bdf8;
-      box-shadow: 0 0 35px rgba(56, 189, 248, 0.45), inset 0 0 15px rgba(56, 189, 248, 0.3);
+      background: linear-gradient(135deg, #1e293b, #090e17);
+      border: 3px solid var(--neon-cyan);
+      box-shadow: 0 0 45px rgba(56, 189, 248, 0.45), inset 0 0 25px rgba(56, 189, 248, 0.35);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       position: relative;
-      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       z-index: 10;
+      outline: none;
     }
 
-    .cyber-btn:hover {
-      box-shadow: 0 0 50px rgba(56, 189, 248, 0.7), inset 0 0 25px rgba(56, 189, 248, 0.5);
-      transform: scale(1.05);
+    .cyber-core-btn:hover {
+      box-shadow: 0 0 65px rgba(56, 189, 248, 0.8), inset 0 0 35px rgba(56, 189, 248, 0.6);
+      transform: scale(1.06);
     }
 
-    .cyber-btn:active {
-      transform: scale(0.94);
-      box-shadow: 0 0 20px rgba(56, 189, 248, 0.6);
+    .cyber-core-btn:active {
+      transform: scale(0.92);
+      box-shadow: 0 0 25px rgba(56, 189, 248, 0.7);
     }
 
-    .cyber-btn img {
-      width: 75%;
-      height: 75%;
+    .cyber-core-btn img {
+      width: 80%;
+      height: 80%;
       object-fit: contain;
       pointer-events: none;
-      filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+      filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
     }
 
     .cyber-guide {
       position: absolute;
-      right: -130px;
-      bottom: -40px;
+      right: -135px;
+      bottom: -35px;
       display: flex;
       flex-direction: column;
       align-items: center;
+      pointer-events: none;
     }
 
     .cyber-bubble {
       background: #ffffff;
       color: #0f172a;
-      font-size: 13px;
-      font-weight: 700;
-      padding: 6px 14px;
-      border-radius: 20px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      font-size: 13.5px;
+      font-weight: 800;
+      padding: 7px 16px;
+      border-radius: 999px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
       white-space: nowrap;
       margin-bottom: 6px;
-      animation: floatBubble 2s ease-in-out infinite;
+      animation: bubbleFloat 2.2s ease-in-out infinite;
     }
 
-    @keyframes floatBubble {
+    @keyframes bubbleFloat {
       0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-5px); }
+      50% { transform: translateY(-6px); }
     }
 
     .cyber-cat-pointer {
-      width: 90px;
-      height: 90px;
+      width: 100px;
+      height: 100px;
       object-fit: contain;
+      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
     }
 
-    /* Shockwave bùng nổ khi click */
     .shockwave {
       position: absolute;
       border-radius: 50%;
-      border: 3px solid #38bdf8;
+      border: 3.5px solid var(--neon-cyan);
       pointer-events: none;
-      animation: shockwaveExplode 0.7s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+      animation: explodeWave 0.75s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
     }
 
-    @keyframes shockwaveExplode {
-      0% {
-        width: 140px; height: 140px; opacity: 1;
-      }
-      100% {
-        width: 1000px; height: 1000px; opacity: 0; border-width: 1px;
-      }
+    @keyframes explodeWave {
+      0% { width: 150px; height: 150px; opacity: 1; }
+      100% { width: 1100px; height: 1100px; opacity: 0; border-width: 1px; }
     }
 
     /* ========================================================
-       ATTENDANCE DASHBOARD (TRANG ĐIỂM DANH)
+       ATTENDANCE DASHBOARD
        ======================================================== */
     #attendance-screen {
       display: none;
       width: 100%;
-      max-width: 640px;
+      max-width: 620px;
       background: var(--card-bg);
-      border-radius: 28px;
+      border-radius: 32px;
       box-shadow: var(--card-shadow);
-      padding: 24px;
+      padding: 28px 26px;
       z-index: 10;
       position: relative;
+      border: 1.5px solid var(--card-border);
     }
 
     #attendance-screen.active {
       display: block;
-      animation: fadeInScale 0.35s ease-out forwards;
+      animation: screenEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
-    @keyframes fadeInScale {
-      from { opacity: 0; transform: scale(0.96); }
-      to { opacity: 1; transform: scale(1); }
+    @keyframes screenEnter {
+      from { opacity: 0; transform: translateY(12px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
     .dash-header {
@@ -496,11 +533,11 @@
       justify-content: space-between;
       border-bottom: 1.5px solid #f1f5f9;
       padding-bottom: 16px;
-      margin-bottom: 16px;
+      margin-bottom: 18px;
     }
 
     .dash-title {
-      font-size: 18px;
+      font-size: 19px;
       font-weight: 800;
       color: #0f172a;
     }
@@ -508,7 +545,8 @@
     .dash-sub {
       font-size: 13px;
       color: #64748b;
-      margin-top: 2px;
+      margin-top: 3px;
+      font-weight: 500;
     }
 
     .filter-grid {
@@ -521,12 +559,14 @@
     .filter-grid select, .filter-grid input {
       width: 100%;
       height: 42px;
-      padding: 0 10px;
-      border-radius: 10px;
-      border: 1px solid #cbd5e1;
+      padding: 0 12px;
+      border-radius: 12px;
+      border: 1.5px solid #cbd5e1;
       font-size: 13.5px;
+      font-weight: 600;
       background: #f8fafc;
       outline: none;
+      color: #1e293b;
     }
 
     .stats-row {
@@ -538,53 +578,63 @@
 
     .stat-badge {
       background: #f8fafc;
-      border-radius: 14px;
-      padding: 12px 10px;
+      border-radius: 16px;
+      padding: 14px 10px;
       text-align: center;
-      border: 1px solid #e2e8f0;
+      border: 1.5px solid #e2e8f0;
+      transition: transform 0.2s;
     }
 
-    .stat-badge.present { border-color: rgba(16, 185, 129, 0.4); background: #ecfdf5; color: #065f46; }
-    .stat-badge.absent-kp { border-color: rgba(239, 68, 68, 0.4); background: #fef2f2; color: #991b1b; }
-    .stat-badge.absent-cp { border-color: rgba(245, 158, 11, 0.4); background: #fffbeb; color: #92400e; }
+    .stat-badge.present { border-color: rgba(16, 185, 129, 0.35); background: #ecfdf5; color: #065f46; }
+    .stat-badge.absent-kp { border-color: rgba(239, 68, 68, 0.35); background: #fef2f2; color: #991b1b; }
+    .stat-badge.absent-cp { border-color: rgba(245, 158, 11, 0.35); background: #fffbeb; color: #92400e; }
 
     .stat-num {
-      font-size: 20px;
-      font-weight: 800;
+      font-size: 22px;
+      font-weight: 900;
     }
 
     .stat-text {
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
       margin-top: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
     }
 
     .search-box {
       width: 100%;
-      height: 44px;
+      height: 46px;
       padding: 0 16px;
-      border-radius: 12px;
-      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      border: 1.5px solid #cbd5e1;
       font-size: 14px;
+      font-weight: 500;
       margin-bottom: 14px;
       outline: none;
+      background: #f8fafc;
+    }
+
+    .search-box:focus {
+      border-color: var(--primary-accent);
+      background: #fff;
     }
 
     .student-list {
       max-height: 380px;
       overflow-y: auto;
-      border-radius: 14px;
-      border: 1px solid #e2e8f0;
-      margin-bottom: 18px;
+      border-radius: 16px;
+      border: 1.5px solid #e2e8f0;
+      margin-bottom: 20px;
+      background: #ffffff;
     }
 
     .student-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 16px;
+      padding: 13px 18px;
       border-bottom: 1px solid #f1f5f9;
-      background: #ffffff;
       transition: background 0.15s;
     }
 
@@ -603,28 +653,30 @@
 
     .stu-name {
       font-size: 14.5px;
-      font-weight: 600;
+      font-weight: 700;
       color: #0f172a;
     }
 
     .stu-id {
       font-size: 12.5px;
       color: #64748b;
+      font-weight: 500;
+      margin-top: 1px;
     }
 
     .attendance-actions {
       display: flex;
-      gap: 6px;
+      gap: 8px;
     }
 
     .btn-att {
-      padding: 6px 12px;
-      border-radius: 8px;
+      padding: 7px 13px;
+      border-radius: 10px;
       font-size: 12px;
       font-weight: 700;
       border: 1.5px solid transparent;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .btn-att.kp {
@@ -636,6 +688,7 @@
     .btn-att.kp.active {
       background: #dc2626;
       color: #ffffff;
+      box-shadow: 0 4px 10px rgba(220, 38, 38, 0.35);
     }
 
     .btn-att.cp {
@@ -647,6 +700,7 @@
     .btn-att.cp.active {
       background: #d97706;
       color: #ffffff;
+      box-shadow: 0 4px 10px rgba(217, 119, 6, 0.35);
     }
 
     .bottom-bar {
@@ -654,32 +708,44 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding-top: 14px;
+      padding-top: 16px;
       border-top: 1.5px solid #f1f5f9;
     }
 
     .btn-secondary {
-      padding: 10px 16px;
-      border-radius: 10px;
+      padding: 11px 18px;
+      border-radius: 12px;
       background: #f1f5f9;
       color: #475569;
       font-size: 13.5px;
-      font-weight: 600;
+      font-weight: 700;
       border: none;
       cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-secondary:hover {
+      background: #e2e8f0;
+      color: #1e293b;
     }
 
     .btn-primary-action {
       flex: 1;
-      height: 44px;
-      background: #2563eb;
+      height: 46px;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
       color: #ffffff;
-      border-radius: 10px;
+      border-radius: 12px;
       font-size: 14.5px;
-      font-weight: 700;
+      font-weight: 800;
       border: none;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+      transition: all 0.2s;
+    }
+
+    .btn-primary-action:hover {
+      transform: translateY(-1.5px);
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.45);
     }
   </style>
 </head>
@@ -688,13 +754,13 @@
   <!-- ==================== MÀN ĐĂNG NHẬP & MASCOT ==================== -->
   <div class="container" id="login-container">
     
-    <!-- KHUNG MASCOT ĐA LỚP LINH HOẠT -->
-    <div class="mascot-wrapper" id="mascot-wrapper">
+    <!-- KHUNG MASCOT ĐA TẦNG CÂN CHỈNH PIXEL HOÀN HẢO -->
+    <div class="mascot-stage" id="mascot-stage">
       <div class="mascot-inner" id="mascot-inner">
-        <!-- Lớp ảnh nền mắt trống để tròng mắt lướt bên trong -->
+        <!-- Lớp nền mắt trống (chuẩn 1024x1024) -->
         <img src="assets/cat-chinh-dien-khong-mat-transparent.png" id="layer-noeyes" class="sprite-layer active" alt="Mascot Base">
         
-        <!-- Đôi mắt chuyển động linh hoạt qua nội suy (Spring / Lerp) -->
+        <!-- Đôi tròng mắt anime nhìn theo mượt 60fps -->
         <div class="eye-layer-container" id="eye-container">
           <div class="eye-socket left">
             <img src="assets/cat-trong-den-anime.png" class="iris-pupil" id="iris-left" alt="Left Iris">
@@ -704,7 +770,7 @@
           </div>
         </div>
 
-        <!-- Các tư thế phụ (Cross-fade mượt bằng opacity 150-200ms) -->
+        <!-- Các tư thế sprite phụ cross-fade mượt mà -->
         <img src="assets/cat-chinh-dien-nham-mat-transparent.png" id="layer-closed" class="sprite-layer" alt="Blink">
         <img src="assets/cat-binh-thuong-transparent.png" id="layer-open" class="sprite-layer" alt="Normal">
         <img src="assets/cat-chuan-bi-chay-transparent.png" id="layer-run1" class="sprite-layer" alt="Run 1">
@@ -716,23 +782,33 @@
       </div>
     </div>
 
-    <!-- KHUNG ĐĂNG NHẬP -->
+    <!-- KHUNG ĐĂNG NHẬP THIẾT KẾ HIỆN ĐẠI -->
     <div class="card" id="login-card">
-      <div class="header-logo">
-        <img src="assets/logo.png" alt="SIU Logo">
-        <h1>SIU <span>ATTENDANCE</span></h1>
+      <div class="card-header">
+        <div class="brand-badge">
+          <img src="assets/logo.png" alt="SIU">
+          <span>Saigon International University</span>
+        </div>
+        <h1>Điểm Danh Lớp Học</h1>
+        <p>Nhập mã học phần để vào danh sách</p>
       </div>
 
       <form id="login-form" onsubmit="handleLogin(event)">
         <div class="input-group">
-          <label for="class-code">Mã lớp học phần</label>
+          <label for="class-code">
+            <span>Mã lớp học phần</span>
+            <span class="badge-req">Bắt buộc</span>
+          </label>
           <div class="input-wrapper">
             <input type="text" id="class-code" placeholder="VD: 241_71ITEC20203_01" required autocomplete="off">
           </div>
         </div>
 
         <div class="input-group">
-          <label for="pin-code">Mã PIN (6 số)</label>
+          <label for="pin-code">
+            <span>Mã PIN (6 số)</span>
+            <span class="badge-req">Bắt buộc</span>
+          </label>
           <div class="input-wrapper">
             <input type="password" id="pin-code" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="••••••" required>
           </div>
@@ -750,7 +826,7 @@
         </button>
 
         <div class="loading-notice" id="loading-notice">
-          🐾 Đang tìm lớp, mèo đang tăng tốc chạy...
+          🐾 Đang tìm lớp, vui lòng chờ trong giây lát...
         </div>
 
         <div class="error-msg" id="error-msg"></div>
@@ -763,7 +839,7 @@
     <div class="cyber-portal">
       <div class="cyber-ring r1"></div>
       <div class="cyber-ring r2"></div>
-      <button class="cyber-btn" id="cyber-core-btn" onclick="triggerCyberLaunch()">
+      <button class="cyber-core-btn" id="cyber-core-btn" onclick="triggerCyberLaunch()">
         <img src="assets/logo.png" alt="Portal Button">
       </button>
 
@@ -778,13 +854,13 @@
   <div id="attendance-screen">
     <div class="dash-header">
       <div>
-        <div class="dash-title" id="dash-class-name">Lập trình Web - 241_71ITEC</div>
-        <div class="dash-sub">Sĩ số: <span id="dash-total">40</span> sinh viên</div>
+        <div class="dash-title" id="dash-class-name">Lớp: 241_71ITEC20203_01</div>
+        <div class="dash-sub">Sĩ số: <span id="dash-total">8</span> sinh viên</div>
       </div>
       <button class="btn-secondary" onclick="logout()">Đổi lớp</button>
     </div>
 
-    <!-- Hàng lọc theo yêu cầu -->
+    <!-- Hàng lọc -->
     <div class="filter-grid">
       <select id="select-session">
         <option>Buổi 1</option>
@@ -803,28 +879,28 @@
     <!-- 3 Ô thống kê -->
     <div class="stats-row">
       <div class="stat-badge present">
-        <div class="stat-num" id="stat-present">38</div>
+        <div class="stat-num" id="stat-present">8</div>
         <div class="stat-text">Có mặt</div>
       </div>
       <div class="stat-badge absent-kp">
-        <div class="stat-num" id="stat-kp">1</div>
+        <div class="stat-num" id="stat-kp">0</div>
         <div class="stat-text">Không phép</div>
       </div>
       <div class="stat-badge absent-cp">
-        <div class="stat-num" id="stat-cp">1</div>
+        <div class="stat-num" id="stat-cp">0</div>
         <div class="stat-text">Có phép</div>
       </div>
     </div>
 
-    <!-- Tìm kiếm sinh viên -->
+    <!-- Ô tìm kiếm sinh viên -->
     <input type="text" class="search-box" id="search-student" placeholder="🔍 Tìm theo MSSV hoặc họ tên..." oninput="filterStudents()">
 
     <!-- Danh sách điểm danh sinh viên -->
     <div class="student-list" id="student-list-container">
-      <!-- Sinh viên sẽ được render động bằng JavaScript -->
+      <!-- Render sinh viên động -->
     </div>
 
-    <!-- Thanh dưới -->
+    <!-- Thanh thao tác dưới -->
     <div class="bottom-bar">
       <button class="btn-secondary" onclick="resetAllAbsent()">Bỏ chọn tất cả</button>
       <button class="btn-secondary" onclick="reportWrongList()">Báo sai danh sách</button>
@@ -863,12 +939,10 @@
                   ]
                 });
               }
-            } else if (funcName === 'apiSubmit') {
-              resolve({ ok: true });
             } else {
               resolve({ ok: true });
             }
-          }, 1200);
+          }, 1100);
           return;
         }
 
@@ -879,9 +953,9 @@
     }
 
     /* ==========================================================================
-       2. HỆ THỐNG ĐIỀU KHIỂN MASCOT LINH HOẠT 60FPS (LERP & SPRING PHYSICS)
+       2. HỆ THỐNG ANIMATION MÈO CHUẨN XÁC 60FPS (SPRING & LERP PHYSICS)
        ========================================================================== */
-    const mascotWrapper = document.getElementById('mascot-wrapper');
+    const mascotStage = document.getElementById('mascot-stage');
     const mascotInner = document.getElementById('mascot-inner');
     const eyeContainer = document.getElementById('eye-container');
     const irisLeft = document.getElementById('iris-left');
@@ -899,30 +973,24 @@
       wave: document.getElementById('layer-wave')
     };
 
-    // Tọa độ mục tiêu và hiện tại cho mắt (LERP)
-    let targetEyeX = 0;
-    let targetEyeY = 0;
-    let currentEyeX = 0;
-    let currentEyeY = 0;
+    // Vị trí mục tiêu và hiện tại cho LERP
+    let targetEyeX = 0, targetEyeY = 0;
+    let currentEyeX = 0, currentEyeY = 0;
+    let targetHeadTilt = 0, currentHeadTilt = 0;
 
-    // Góc nghiêng đầu của mèo
-    let targetHeadTilt = 0;
-    let currentHeadTilt = 0;
-
-    // Giới hạn chuyển động tròng mắt (±15px theo tỉ lệ 1600x1600)
-    // Trên display 240px: 15 * (240 / 1600) = ~2.25px
-    const MAX_EYE_OFFSET = 12; // Giới hạn pixel an toàn trong hốc mắt
-    const LERP_FACTOR = 0.15; // Hệ số mượt mà mỗi frame
+    // Giới hạn an toàn di chuyển tròng mắt trong hốc tròn (±6px ở stage 250px)
+    const MAX_OFFSET_X = 6.5;
+    const MAX_OFFSET_Y = 5.0;
+    const LERP_FACTOR = 0.15;
 
     let isTyping = false;
     let isRunning = false;
     let currentActiveLayer = 'noeyes';
 
-    // Đổi tư thế có cross-fade bằng opacity (150-200ms)
+    // Đổi tư thế có cross-fade mượt mà bằng opacity
     function setPose(layerKey) {
       if (currentActiveLayer === layerKey) return;
       
-      // Ẩn lớp mắt nếu đang ở tư thế toàn thân đặc biệt
       if (layerKey === 'noeyes') {
         eyeContainer.style.opacity = '1';
       } else {
@@ -930,9 +998,7 @@
       }
 
       Object.keys(layers).forEach(k => {
-        if (layers[k]) {
-          layers[k].classList.remove('active');
-        }
+        if (layers[k]) layers[k].classList.remove('active');
       });
 
       if (layers[layerKey]) {
@@ -941,53 +1007,47 @@
       }
     }
 
-    // VÒNG LẶP NỘI SUY CHUYỂN ĐỘNG 60FPS
+    // VÒNG LẶP NỘI SUY 60FPS
     function renderMascotFrame() {
-      // Nội suy LERP: pos += (target - pos) * 0.15
       currentEyeX += (targetEyeX - currentEyeX) * LERP_FACTOR;
       currentEyeY += (targetEyeY - currentEyeY) * LERP_FACTOR;
       currentHeadTilt += (targetHeadTilt - currentHeadTilt) * 0.08;
 
-      // Cập nhật transform cho tròng mắt (chỉ dùng translate3d để không gây reflow)
       const eyeTransform = `translate3d(${currentEyeX.toFixed(2)}px, ${currentEyeY.toFixed(2)}px, 0)`;
       irisLeft.style.transform = eyeTransform;
       irisRight.style.transform = eyeTransform;
 
-      // Cập nhật nghiêng đầu nhẹ theo hướng nhìn
       mascotInner.style.transform = `rotate(${currentHeadTilt.toFixed(2)}deg)`;
 
       requestAnimationFrame(renderMascotFrame);
     }
     requestAnimationFrame(renderMascotFrame);
 
-    // XỬ LÝ CON TRỎ CHUỘT
+    // BÁM THEO CHUỘT KHI KHÔNG GÕ PHÍM
     window.addEventListener('mousemove', (e) => {
       if (isTyping || isRunning) return;
 
-      const rect = mascotWrapper.getBoundingClientRect();
+      const rect = mascotStage.getBoundingClientRect();
       const mascotCenterX = rect.left + rect.width / 2;
-      const mascotCenterY = rect.top + rect.height / 2;
+      const mascotCenterY = rect.top + rect.height * 0.42;
 
       const dx = e.clientX - mascotCenterX;
       const dy = e.clientY - mascotCenterY;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
       if (dist > 0) {
-        const factor = Math.min(dist / 300, 1);
-        targetEyeX = (dx / dist) * MAX_EYE_OFFSET * factor;
-        targetEyeY = (dy / dist) * (MAX_EYE_OFFSET * 0.75) * factor;
-
-        // Nghiêng đầu tối đa ±3 độ
-        targetHeadTilt = Math.max(-3, Math.min(3, (dx / 300) * 3));
+        const factor = Math.min(dist / 320, 1);
+        targetEyeX = (dx / dist) * MAX_OFFSET_X * factor;
+        targetEyeY = (dy / dist) * MAX_OFFSET_Y * factor;
+        targetHeadTilt = Math.max(-3, Math.min(3, (dx / 320) * 3));
       }
     });
 
-    // CHỚP MẮT TỰ NHIÊN (3 - 5 GIÂY / LẦN)
+    // CHỚP MẮT TỰ NHIÊN (3 - 5 GIÂY)
     function scheduleBlink() {
-      const interval = Math.random() * 2000 + 3000; // 3-5s
+      const interval = Math.random() * 2000 + 3000;
       setTimeout(() => {
         if (!isRunning && currentActiveLayer === 'noeyes') {
-          // Đổi sang mắt nhắm trong 130ms rồi đổi lại
           layers.closed.classList.add('active');
           eyeContainer.style.opacity = '0';
 
@@ -1009,21 +1069,20 @@
       isTyping = true;
 
       const rect = input.getBoundingClientRect();
-      const mascotRect = mascotWrapper.getBoundingClientRect();
+      const mascotRect = mascotStage.getBoundingClientRect();
       const mascotCenterX = mascotRect.left + mascotRect.width / 2;
-      const mascotCenterY = mascotRect.top + mascotRect.height / 2;
+      const mascotCenterY = mascotRect.top + mascotRect.height * 0.42;
 
-      // Tính vị trí tương đối của con trỏ chữ trong ô nhập
-      const charWidth = 9;
-      const caretX = rect.left + Math.min(input.selectionStart * charWidth, rect.width - 20) + 15;
+      const charWidth = 9.5;
+      const caretX = rect.left + Math.min(input.selectionStart * charWidth, rect.width - 24) + 16;
       const caretY = rect.top + rect.height / 2;
 
       const dx = caretX - mascotCenterX;
       const dy = caretY - mascotCenterY;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      targetEyeX = Math.max(-MAX_EYE_OFFSET, Math.min(MAX_EYE_OFFSET, (dx / dist) * MAX_EYE_OFFSET));
-      targetEyeY = Math.max(-MAX_EYE_OFFSET * 0.75, Math.min(MAX_EYE_OFFSET * 0.75, (dy / dist) * MAX_EYE_OFFSET));
+      targetEyeX = Math.max(-MAX_OFFSET_X, Math.min(MAX_OFFSET_X, (dx / dist) * MAX_OFFSET_X));
+      targetEyeY = Math.max(-MAX_OFFSET_Y, Math.min(MAX_OFFSET_Y, (dy / dist) * MAX_OFFSET_Y));
       targetHeadTilt = (dx / 400) * 2.5;
 
       clearTimeout(input._typingTimer);
@@ -1043,7 +1102,7 @@
       });
     });
 
-    // NHỚ MÃ LỚP TRÊN THIẾT BỊ
+    // GHI NHỚ MÃ LỚP
     const savedClass = localStorage.getItem('siu_class_code');
     if (savedClass) {
       classInput.value = savedClass;
@@ -1051,7 +1110,7 @@
     }
 
     /* ==========================================================================
-       3. XỬ LÝ ĐĂNG NHẬP, LOADING MÈO CHẠY VÀ CHUYỂN CẢNH
+       3. XỬ LÝ ĐĂNG NHẬP, LOADING BƯỚC CHẠY VÀ CYBER LAUNCH
        ========================================================================== */
     let runInterval = null;
 
@@ -1067,7 +1126,6 @@
         localStorage.removeItem('siu_class_code');
       }
 
-      // Khóa nút và khởi động trạng thái chạy
       const btn = document.getElementById('btn-login');
       const notice = document.getElementById('loading-notice');
       const errBox = document.getElementById('error-msg');
@@ -1075,7 +1133,7 @@
       btn.disabled = true;
       notice.style.display = 'block';
 
-      // Kích hoạt mèo chạy đổi luân phiên run1 và run2
+      // Mèo chạy luân phiên 2 bước chân
       isRunning = true;
       let step = 0;
       setPose('run1');
@@ -1089,18 +1147,17 @@
         clearInterval(runInterval);
         isRunning = false;
 
-        // Thành công: Squash & Stretch nhẹ và đổi sang vui vẻ
-        mascotWrapper.classList.add('mascot-squash');
+        // Thành công: Squash & Stretch nảy nhẹ và đổi sang vui vẻ
+        mascotStage.classList.add('mascot-squash');
         setPose('cheer');
-        setTimeout(() => mascotWrapper.classList.remove('mascot-squash'), 220);
+        setTimeout(() => mascotStage.classList.remove('mascot-squash'), 220);
 
         setTimeout(() => {
-          // Ẩn màn đăng nhập, hiện màn Cyber
           document.getElementById('login-container').style.display = 'none';
           const cyberScreen = document.getElementById('cyber-screen');
           cyberScreen.classList.add('active');
           window.sessionData = res;
-        }, 600);
+        }, 550);
 
       } catch (err) {
         clearInterval(runInterval);
@@ -1108,11 +1165,11 @@
         btn.disabled = false;
         notice.style.display = 'none';
 
-        // Lỗi: Rung lắc card và đổi sang tư thế bối rối / nghiêng đầu
+        // Lỗi: Nghiêng đầu bối rối và rung card
         setPose('tilt');
         const card = document.getElementById('login-card');
         card.classList.add('shake');
-        errBox.textContent = err.message || 'Mã lớp hoặc PIN không hợp lệ!';
+        errBox.textContent = err.message || 'Mã lớp hoặc PIN không đúng!';
         errBox.style.display = 'block';
 
         setTimeout(() => {
@@ -1122,11 +1179,10 @@
       }
     }
 
-    // KÍCH HOẠT HIỆU ỨNG CYBER
+    // CHUYỂN CẢNH CYBER
     function triggerCyberLaunch() {
       const btn = document.getElementById('cyber-core-btn');
       
-      // Tạo hiệu ứng sóng xung kích lan tỏa (Shockwave)
       const shock = document.createElement('div');
       shock.className = 'shockwave';
       btn.parentElement.appendChild(shock);
@@ -1146,10 +1202,10 @@
     }
 
     /* ==========================================================================
-       4. TRANG ĐIỂM DANH SINH VIÊN (ATTENDANCE DASHBOARD)
+       4. TRANG ĐIỂM DANH SINH VIÊN
        ========================================================================== */
     let studentData = [];
-    let attendanceMap = {}; // { mssv: 'KP' | 'CP' }
+    let attendanceMap = {};
 
     function initAttendanceDashboard(data) {
       const screen = document.getElementById('attendance-screen');
@@ -1190,7 +1246,7 @@
 
     function toggleStatus(mssv, type) {
       if (attendanceMap[mssv] === type) {
-        delete attendanceMap[mssv]; // Bấm lại để bỏ chọn
+        delete attendanceMap[mssv];
       } else {
         attendanceMap[mssv] = type;
       }
