@@ -4,10 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Điểm danh lớp học phần – SIU</title>
+<!-- Tải Three.js từ local assets để đảm bảo offline và online đều hoạt động tức thì 60 FPS -->
+<script src="assets/three.min.js"></script>
 <style>
 :root{
   --navy:#1e3a8a; --blue:#3b82f6; --blue2:#2563eb; --cyan:#00f3ff; --violet:#a78bfa; --sky:#bae6fd;
-  --bg:#f3f7ff; --card:#ffffffd9; --text:#0f1b3d; --muted:#64748b; --line:#dbe6ff;
+  --bg:#030712; --card:#ffffffea; --text:#0f1b3d; --muted:#64748b; --line:#dbe6ff;
   --ok:#16a34a; --bad:#dc2626; --warn:#d97706;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -17,98 +19,78 @@ body{min-height:100vh;min-height:100dvh;overflow-x:hidden}
 .view.active{display:block}
 button{font:inherit;cursor:pointer}
 
+/* CANVAS THREE.JS 3D NỀN KHÔNG GIAN BỀ BỘN CÔNG NGHỆ 60FPS */
+#three-canvas-bg{
+  position:fixed;top:0;left:0;width:100vw;height:100vh;
+  z-index:0;pointer-events:none;
+}
+
 /* ============ DEVICE SELECTOR (BƯỚC 1: CHỌN MÁY TÍNH / ĐIỆN THOẠI) ============ */
 #picker{
-  position:fixed;inset:0;background:radial-gradient(900px 500px at 50% 30%,#1e293b 0,#030712 80%);
+  position:fixed;inset:0;
   display:none;align-items:center;justify-content:center;padding:24px;z-index:200;flex-direction:column;
 }
-#picker.active{display:flex;animation:fadeIn .4s ease both}
-.picker-title{font-size:clamp(22px,4vmin,32px);font-weight:900;letter-spacing:-.5px;color:#fff;margin-bottom:6px;text-align:center}
-.picker-title span{color:var(--cyan);text-shadow:0 0 20px rgba(0,243,255,.6)}
-.picker-sub{font-size:14px;color:#94a3b8;margin-bottom:32px;text-align:center;max-width:440px}
-.cards-grid{display:flex;gap:20px;width:100%;max-width:540px;justify-content:center}
+#picker.active{display:flex;animation:fadeIn .5s ease both}
+.picker-title{font-size:clamp(24px,4.5vmin,36px);font-weight:900;letter-spacing:-.5px;color:#fff;margin-bottom:8px;text-align:center}
+.picker-title span{color:var(--cyan);text-shadow:0 0 25px rgba(0,243,255,.8)}
+.picker-sub{font-size:14.5px;color:#94a3b8;margin-bottom:36px;text-align:center;max-width:460px;line-height:1.5}
+.cards-grid{display:flex;gap:24px;width:100%;max-width:560px;justify-content:center}
 .dev-card{
-  flex:1;max-width:240px;background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.12);
-  border-radius:24px;padding:28px 18px;display:flex;flex-direction:column;align-items:center;cursor:pointer;
-  backdrop-filter:blur(16px);box-shadow:0 20px 40px rgba(0,0,0,.6);transition:all .25s cubic-bezier(.175,.885,.32,1.275);
+  flex:1;max-width:260px;background:rgba(15,23,42,.65);border:2px solid rgba(255,255,255,.14);
+  border-radius:28px;padding:32px 20px;display:flex;flex-direction:column;align-items:center;cursor:pointer;
+  backdrop-filter:blur(24px);box-shadow:0 25px 50px rgba(0,0,0,.7),0 0 20px rgba(0,243,255,.05);
+  transition:all .28s cubic-bezier(.175,.885,.32,1.275);position:relative;overflow:hidden;
 }
-.dev-card:hover{transform:translateY(-8px) scale(1.04);border-color:var(--cyan);box-shadow:0 0 35px rgba(0,243,255,.4);background:rgba(0,243,255,.08)}
+.dev-card:hover{
+  transform:translateY(-10px) scale(1.04);border-color:var(--cyan);
+  box-shadow:0 0 40px rgba(0,243,255,.45),0 20px 40px rgba(0,0,0,.8);background:rgba(0,243,255,.1);
+}
 .dev-card:active{transform:scale(.96)}
-.dev-icon{font-size:42px;margin-bottom:14px;filter:drop-shadow(0 0 10px rgba(255,255,255,.3))}
-.dev-name{font-size:17px;font-weight:800;color:#fff;margin-bottom:6px}
-.dev-desc{font-size:12px;color:#94a3b8;text-align:center;line-height:1.4}
+.dev-icon{font-size:46px;margin-bottom:16px;filter:drop-shadow(0 0 12px rgba(255,255,255,.4))}
+.dev-name{font-size:18px;font-weight:800;color:#fff;margin-bottom:6px}
+.dev-desc{font-size:12.5px;color:#94a3b8;text-align:center;line-height:1.4}
 
 /* ============ LOGIN ============ */
-#login{min-height:100dvh;background:
-  radial-gradient(900px 500px at 15% -10%,#dbeafe 0,transparent 60%),
-  radial-gradient(800px 500px at 100% 100%,#ede9fe 0,transparent 55%),var(--bg);
-  display:none;align-items:center;justify-content:center;padding:20px;position:relative}
+#login{min-height:100dvh;display:none;align-items:center;justify-content:center;padding:20px;position:relative;z-index:10}
 #login.active{display:flex}
-.login-wrap{width:100%;max-width:420px;position:relative}
+.login-wrap{width:100%;max-width:430px;position:relative}
 
-/* MASCOT ZONE: HỖ TRỢ CẢ 2 CHẾ ĐỘ (RIG VECTOR TÁCH MẮT & VIDEO AI CINEMA) */
-.mascot-zone{position:relative;height:225px;display:flex;justify-content:center;align-items:flex-end;margin-bottom:-26px;z-index:2}
-#mascot{width:270px;height:270px;position:relative;margin-bottom:-22px;transition:transform .3s;transform-origin:50% 90%;pointer-events:none}
-#mascot img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;user-select:none;-webkit-user-drag:none}
-#mascot .eye{position:absolute;overflow:hidden;border-radius:50%;width:7.9%;height:6.7%;transform:translate(-50%,-50%)}
-#mascot .eye.l{left:40.9%;top:44.8%}
-#mascot .eye.r{left:59.6%;top:44.8%}
-#mascot .eye .ir{position:absolute;left:50%;top:50%;width:112%;height:auto;aspect-ratio:120/123;transform:translate(-50%,-50%);transition:transform .09s linear;filter:brightness(.72) saturate(1.15)}
-#mascot .eye .hl{position:absolute;border-radius:50%;background:#fff;pointer-events:none;transition:transform .09s linear}
-#mascot .eye .hl.a{width:22%;height:24%;left:30%;top:20%}
-#mascot .eye .hl.b{width:11%;height:12%;left:58%;top:62%;opacity:.9}
-#closedImg{opacity:0;transition:opacity .06s}
-#mascot.blink #closedImg{opacity:1}
-#mascot.blink .eye{visibility:hidden}
-#mascot.tilt{transform:rotate(-3deg) translateY(-3px)}
-#mascot.bounce{animation:hop .2s ease-out}
-@keyframes hop{50%{transform:translateY(-8px) scale(1.02,.98)}}
-#mascot.idle>.base{animation:bob 3.2s ease-in-out infinite}
-#mascot.gone{display:none}
+/* MASCOT ZONE: KHUNG VIDEO CINEMA HOÀN TOÀN TỰ NHIÊN */
+.mascot-zone{position:relative;height:240px;display:flex;justify-content:center;align-items:flex-end;margin-bottom:-28px;z-index:2}
 
-/* VIDEO STAGE CINEMA KHI CHỌN MODE THIẾT BỊ */
 #videoStage{
-  position:absolute;width:240px;height:240px;border-radius:32px;overflow:hidden;
-  bottom:0;display:none;mix-blend-mode:multiply;pointer-events:none;
+  position:relative;width:245px;height:245px;border-radius:36px;overflow:hidden;
+  box-shadow:0 16px 40px -10px rgba(0,0,0,.3);pointer-events:none;background:#f8fafc;
 }
-#videoStage.on{display:block}
-#videoStage video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .2s ease}
+#videoStage video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .22s ease}
 #videoStage video.curr{opacity:1}
 
-#runner{position:absolute;left:50%;bottom:0;width:230px;height:230px;margin-left:-115px;display:none;will-change:transform}
-#runner.on{display:block}
-#runner .flipper{width:100%;height:100%;transition:transform .25s}
-#runner img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
-#runner .step{animation:step .36s steps(1) infinite}
-#runner .step.b{animation-delay:.18s}
-@keyframes step{0%{opacity:1}50%{opacity:0}}
-@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-.flyletter{position:fixed;left:0;top:0;z-index:50;font-weight:800;font-size:22px;color:var(--navy);pointer-events:none;text-shadow:0 2px 8px #3b82f655;will-change:transform}
-.card{background:var(--card);backdrop-filter:blur(10px);border:1px solid #fff;border-radius:22px;padding:26px 22px 22px;
-  box-shadow:0 20px 50px -20px #1e3a8a55,0 2px 0 #fff inset;position:relative;z-index:1}
-.card h1{font-size:22px;margin:6px 0 2px;text-align:center}
-.card p.sub{margin:0 0 16px;text-align:center;color:var(--muted);font-size:13.5px}
+.card{background:var(--card);backdrop-filter:blur(24px);border:1.5px solid rgba(255,255,255,.8);border-radius:26px;padding:30px 24px 24px;
+  box-shadow:0 25px 60px -15px rgba(0,0,0,.45),0 0 35px rgba(37,99,235,.15);position:relative;z-index:1}
+.card h1{font-size:22px;margin:4px 0 2px;text-align:center;color:#0f172a;letter-spacing:-.4px}
+.card p.sub{margin:0 0 14px;text-align:center;color:var(--muted);font-size:13.5px}
 .mode-pill{
   display:flex;align-items:center;justify-content:center;gap:6px;background:#eef2ff;
-  border:1px solid #c7d2fe;padding:4px 12px;border-radius:999px;font-size:12px;
+  border:1px solid #c7d2fe;padding:5px 14px;border-radius:999px;font-size:12px;
   color:#3730a3;font-weight:700;margin:0 auto 16px auto;width:max-content;cursor:pointer;
+  transition:all .15s;
 }
-.mode-pill:hover{background:#e0e7ff}
+.mode-pill:hover{background:#e0e7ff;transform:scale(1.02)}
 .field{margin-bottom:14px}
-.field label{display:block;font-size:13px;font-weight:600;color:#334155;margin-bottom:6px}
+.field label{display:block;font-size:13px;font-weight:700;color:#334155;margin-bottom:6px}
 .inwrap{position:relative}
 .inwrap svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--blue2);opacity:.8}
-.inwrap input{width:100%;height:50px;border-radius:14px;border:1.5px solid var(--line);background:#fff;padding:0 14px 0 42px;
-  font:inherit;font-size:16px;color:var(--text);outline:none;transition:.2s}
+.inwrap input{width:100%;height:52px;border-radius:14px;border:1.5px solid var(--line);background:#fff;padding:0 14px 0 42px;
+  font:inherit;font-size:15.5px;color:var(--text);outline:none;transition:.2s}
 .inwrap input:focus{border-color:var(--blue);box-shadow:0 0 0 4px #3b82f629}
 .inwrap input.err{border-color:var(--bad);animation:shake .35s}
 @keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
-.remember{display:flex;align-items:center;gap:8px;font-size:14px;color:#475569;margin:2px 0 16px}
-.remember input{width:18px;height:18px;accent-color:var(--blue2)}
-.btn{width:100%;height:50px;border:0;border-radius:14px;color:#fff;font-weight:700;font-size:16px;
-  background:linear-gradient(135deg,var(--blue),var(--navy));box-shadow:0 8px 20px -8px var(--blue2);
+.remember{display:flex;align-items:center;gap:8px;font-size:14px;color:#475569;margin:2px 0 16px;cursor:pointer}
+.remember input{width:18px;height:18px;accent-color:var(--blue2);cursor:pointer}
+.btn{width:100%;height:52px;border:0;border-radius:14px;color:#fff;font-weight:700;font-size:16px;
+  background:linear-gradient(135deg,var(--blue),var(--navy));box-shadow:0 10px 24px -6px var(--blue2);
   transition:transform .12s,box-shadow .2s,filter .2s;position:relative;overflow:hidden}
-.btn:hover{filter:brightness(1.08);box-shadow:0 12px 26px -8px var(--blue2)}
+.btn:hover{filter:brightness(1.08);box-shadow:0 14px 28px -6px var(--blue2)}
 .btn:active{transform:translateY(2px) scale(.99)}
 .btn:disabled{background:#cbd5e1;box-shadow:none;cursor:not-allowed;filter:none;color:#64748b}
 .loadmsg{display:none;text-align:center;margin-top:14px;color:var(--navy);font-size:14px;font-weight:600}
@@ -116,11 +98,11 @@ button{font:inherit;cursor:pointer}
 .loadmsg i{display:inline-block;width:14px;height:14px;border:2px solid #93c5fd;border-top-color:var(--navy);border-radius:50%;
   vertical-align:-2px;margin-right:8px;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.errmsg{color:var(--bad);font-size:13px;text-align:center;margin-top:10px;min-height:16px}
+.errmsg{color:var(--bad);font-size:13px;text-align:center;margin-top:10px;min-height:16px;font-weight:600}
 .card.busy .field,.card.busy .remember{opacity:.55;pointer-events:none}
 
-/* ============ CYBER ============ */
-#cyber{position:fixed;inset:0;background:radial-gradient(circle at 50% 50%,#0b1a4a 0,#050b24 70%);z-index:100;display:none;overflow:hidden;
+/* ============ CYBER TRANSITION 3D SCENE ============ */
+#cyber{position:fixed;inset:0;background:#000000;z-index:100;display:none;overflow:hidden;
   touch-action:manipulation;user-select:none;-webkit-user-select:none}
 #cyber.active{display:block;animation:fadeIn .7s ease both}
 #cyber.out{animation:fadeOut .7s ease forwards}
@@ -147,20 +129,20 @@ button{font:inherit;cursor:pointer}
 .helper{position:absolute;width:190px;height:190px;right:calc(50% + 120px);top:calc(50% - 110px);z-index:3;opacity:0;
   animation:fadeIn .6s 1.2s forwards,bob 1.4s 1.2s ease-in-out infinite}
 .helper img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 14px #3b82f677)}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 .hide-hint .hint,.hide-hint .helper{opacity:0!important;animation:none;transition:opacity .2s}
+
 @media(max-width:640px){
   #logoBtn{width:140px;height:140px}
   .helper{right:auto;left:50%;top:calc(50% + 150px);margin-left:-60px;width:120px;height:120px}
   .hint{margin-top:30px}
-  #mascot{width:220px;height:220px}.mascot-zone{height:190px}
-  #videoStage{width:200px;height:200px}
-  #runner{width:200px;height:200px;margin-left:-100px}
   .cards-grid{flex-direction:column;align-items:center}
   .dev-card{width:100%;max-width:280px}
+  #videoStage{width:220px;height:220px}
 }
 
 /* ============ APP ============ */
-#app{background:#eef3ff;min-height:100dvh;padding-bottom:84px}
+#app{background:#eef3ff;min-height:100dvh;padding-bottom:84px;position:relative;z-index:10}
 .topbar{position:sticky;top:0;z-index:20;background:linear-gradient(135deg,#1e3a8a,#2549b3);color:#fff;padding:14px 16px;
   display:flex;align-items:center;gap:10px;box-shadow:0 6px 18px -8px #1e3a8a}
 .topbar .t{flex:1;min-width:0}
@@ -219,15 +201,17 @@ select:focus,input[type=date]:focus,input[type=search]:focus{border-color:var(--
 #cheer small{color:#bfdbfe;margin-top:6px}
 @keyframes pop{from{transform:scale(.3) translateY(60px);opacity:0}}
 @media(min-width:900px){.container{max-width:720px}}
-@media(prefers-reduced-motion:reduce){*{animation-duration:.01s!important;animation-iteration-count:1!important}}
 </style>
 </head>
 <body>
 
+<!-- CANVAS THREE.JS 3D NỀN -->
+<canvas id="three-canvas-bg"></canvas>
+
 <!-- ======================= 0. BƯỚC 1: CHỌN THIẾT BỊ NỔI BẬT ======================= -->
 <section id="picker" class="active">
   <div class="picker-title">CHỌN <span>THIẾT BỊ</span> TRUY CẬP</div>
-  <div class="picker-sub">Chọn thiết bị để kích hoạt hoạt ảnh tương tác mèo sống động</div>
+  <div class="picker-sub">Chọn thiết bị để kích hoạt hoạt ảnh tương tác mèo 3D sống động</div>
   <div class="cards-grid">
     <div class="dev-card" onclick="pickMode('mobile')">
       <div class="dev-icon">📱</div>
@@ -246,16 +230,7 @@ select:focus,input[type=date]:focus,input[type=search]:focus{border-color:var(--
 <section id="login" class="view">
   <div class="login-wrap">
     <div class="mascot-zone" id="mascotZone">
-      
-      <!-- MODE 1: RIG CHÍNH DIỆN MẮT NHÌN THEO CHỮ (CLAUDE LOGIC) -->
-      <div id="mascot" class="idle">
-        <img class="base" id="baseImg" data-a="front-noeyes" alt="">
-        <div class="eye l"><img class="ir" data-a="iris" alt=""><i class="hl a"></i><i class="hl b"></i></div>
-        <div class="eye r"><img class="ir" data-a="iris" alt=""><i class="hl a"></i><i class="hl b"></i></div>
-        <img id="closedImg" data-a="front-closed" alt="">
-      </div>
-
-      <!-- MODE 2: VIDEO CINEMA KHI CHỌN LAPTOP HOẶC ĐIỆN THOẠI -->
+      <!-- VIDEO CINEMA TỰ NHIÊN ĐỒNG BỘ THEO THAO TÁC -->
       <div id="videoStage">
         <video id="vCho" src="assets/clips/01-cho.mp4" playsinline muted loop autoplay></video>
         <video id="vLayLap" src="assets/clips/02-lay-lap.mp4" playsinline muted></video>
@@ -268,8 +243,6 @@ select:focus,input[type=date]:focus,input[type=search]:focus{border-color:var(--
         <video id="vDtOk" src="assets/clips/08-dt-thanh-cong.mp4" playsinline muted></video>
         <video id="vDtBad" src="assets/clips/09-sai-dt.mp4" playsinline muted></video>
       </div>
-
-      <div id="runner"><div class="flipper" id="flipper"><img class="step a" data-a="run-1" alt=""><img class="step b" data-a="run-2" alt=""></div></div>
     </div>
 
     <form class="card" id="loginForm" autocomplete="off" novalidate>
@@ -357,6 +330,110 @@ select:focus,input[type=date]:focus,input[type=search]:focus{border-color:var(--
 <div class="toast" id="toast"></div>
 
 <script>
+/* =====================================================================
+   THREE.JS 3D SCENE KHÔNG GIAN BẬC THẦY (PARTICLES, NEON GRID & LIGHTING)
+   ===================================================================== */
+let threeScene, threeCamera, threeRenderer, particleSystem, gridHelper;
+let mouseX = 0, mouseY = 0, targetX = 0, targetY = 0;
+
+function initThreeBackground() {
+  const canvas = document.getElementById('three-canvas-bg');
+  threeScene = new THREE.Scene();
+  threeScene.fog = new THREE.FogExp2(0x030712, 0.002);
+
+  threeCamera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+  threeCamera.position.z = 180;
+  threeCamera.position.y = 40;
+
+  threeRenderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: "high-performance" });
+  threeRenderer.setSize(window.innerWidth, window.innerHeight);
+  threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  // 1. Hệ thống hạt photon 3D (3000 hạt bay lơ lửng)
+  const particleCount = 2000;
+  const geometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(particleCount * 3);
+  const colors = new Float32Array(particleCount * 3);
+
+  const colorPalette = [
+    new THREE.Color(0x00f3ff), // Cyan
+    new THREE.Color(0x3b82f6), // Blue
+    new THREE.Color(0xa78bfa), // Violet
+    new THREE.Color(0xffffff)  // White
+  ];
+
+  for (let i = 0; i < particleCount * 3; i += 3) {
+    positions[i] = (Math.random() - 0.5) * 800;
+    positions[i + 1] = (Math.random() - 0.5) * 600;
+    positions[i + 2] = (Math.random() - 0.5) * 800;
+
+    const col = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+    colors[i] = col.r;
+    colors[i + 1] = col.g;
+    colors[i + 2] = col.b;
+  }
+
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+  const material = new THREE.PointsMaterial({
+    size: 2.2,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.75,
+    blending: THREE.AdditiveBlending
+  });
+
+  particleSystem = new THREE.Points(geometry, material);
+  threeScene.add(particleSystem);
+
+  // 2. Lưới vi mạch tương lai dưới sàn 3D
+  gridHelper = new THREE.GridHelper(600, 40, 0x00f3ff, 0x1e3a8a);
+  gridHelper.position.y = -80;
+  gridHelper.material.transparent = true;
+  gridHelper.material.opacity = 0.22;
+  threeScene.add(gridHelper);
+
+  // Tương tác chuột di chuyển camera mượt mà
+  window.addEventListener('pointermove', (e) => {
+    mouseX = (e.clientX - window.innerWidth / 2) * 0.05;
+    mouseY = (e.clientY - window.innerHeight / 2) * 0.05;
+  });
+
+  window.addEventListener('resize', onThreeResize);
+  animateThree();
+}
+
+function onThreeResize() {
+  if (!threeCamera || !threeRenderer) return;
+  threeCamera.aspect = window.innerWidth / window.innerHeight;
+  threeCamera.updateProjectionMatrix();
+  threeRenderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+function animateThree() {
+  requestAnimationFrame(animateThree);
+
+  // Xoay nhẹ hệ thống hạt
+  if (particleSystem) {
+    particleSystem.rotation.y += 0.0008;
+    particleSystem.rotation.x += 0.0003;
+  }
+
+  // Camera lerp theo chuột
+  targetX += (mouseX - targetX) * 0.05;
+  targetY += (-mouseY - targetY) * 0.05;
+
+  threeCamera.position.x = targetX;
+  threeCamera.position.y = 40 + targetY;
+  threeCamera.lookAt(0, 0, 0);
+
+  threeRenderer.render(threeScene, threeCamera);
+}
+
+// Khởi chạy Three.js khi load trang
+window.addEventListener('DOMContentLoaded', initThreeBackground);
+
 /* ========================= KẾT NỐI BACKEND (Google Apps Script) ========================= */
 const GAS = (typeof google !== 'undefined' && google.script && google.script.run);
 function callGas(fn, ...args){
@@ -389,7 +466,6 @@ const $=s=>document.querySelector(s);
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
 function toast(m,ms=2600){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('on'),ms)}
 function show(id){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));$(id).classList.add('active')}
-const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* ========================= CHẾ ĐỘ THIẾT BỊ & VIDEO MASCOT ========================= */
 let currentMode='laptop'; // 'laptop' | 'mobile'
@@ -398,7 +474,6 @@ const vids={
   cho:$('#vCho'), layLap:$('#vLayLap'), goLap:$('#vGoLap'), lapOk:$('#vLapOk'), lapBad:$('#vLapBad'),
   layDt:$('#vLayDt'), bamDt:$('#vBamDt'), dtOk:$('#vDtOk'), dtBad:$('#vDtBad')
 };
-let curVid=vids.cho;
 
 function playClip(target, loop=false){
   if(!target) return;
@@ -409,17 +484,12 @@ function playClip(target, loop=false){
   target.currentTime=0;
   target.classList.add('curr');
   target.play().catch(()=>{});
-  curVid=target;
 }
 
 function pickMode(mode){
   currentMode=mode;
   $('#picker').classList.remove('active');
   $('#login').classList.add('active');
-
-  // Kích hoạt Video Stage Cinema
-  $('#mascot').classList.add('gone');
-  videoStage.classList.add('on');
 
   if(mode==='laptop'){
     $('#modePill').textContent='💻 Chế độ: Laptop (Bấm để đổi)';
@@ -435,79 +505,34 @@ function pickMode(mode){
 function showPicker(){
   $('#login').classList.remove('active');
   $('#picker').classList.add('active');
-  videoStage.classList.remove('on');
-  $('#mascot').classList.remove('gone');
 }
 
-/* ========================= LINH VẬT TƯƠNG TÁC (CLAUDE LOGIC) ========================= */
-const mascot=$('#mascot'), irises=[...mascot.querySelectorAll('.ir')], hls=[...mascot.querySelectorAll('.hl')];
-function look(x,y){
-  const r=mascot.getBoundingClientRect();
-  const cx=r.left+r.width*.5, cy=r.top+r.height*.448;
-  let dx=x-cx, dy=y-cy; const d=Math.hypot(dx,dy)||1; const k=Math.min(1,d/200);
-  const px=dx/d*k*13, py=dy/d*k*11;
-  irises.forEach(i=>i.style.transform=`translate(calc(-50% + ${px}%),calc(-50% + ${py}%))`);
-  hls.forEach(h=>h.style.transform=`translate(${px*.5}%,${py*.5}%)`);
-}
-document.addEventListener('pointermove',e=>{ if(!typing && $('#login').classList.contains('active') && !running) look(e.clientX,e.clientY)});
-let typing=false, typingT, running=false, vidTypeTimer=null;
-
-function caretPoint(inp){
-  const r=inp.getBoundingClientRect();
-  const w=Math.min(inp.value.length*9.5,r.width-70);
-  return [r.left+44+w, r.top+r.height/2];
-}
-
-function onType(e){
-  const inp=e.target; typing=true; clearTimeout(typingT); typingT=setTimeout(()=>{typing=false},1400);
-  const [px,py]=caretPoint(inp); look(px,py);
-  mascot.classList.add('tilt'); mascot.classList.remove('idle');
-  clearTimeout(onType._t); onType._t=setTimeout(()=>{mascot.classList.remove('tilt');mascot.classList.add('idle')},1500);
-  if(e.inputType && e.inputType.startsWith('insert') && e.data) throwLetter(e.data,inp,px,py);
-
-  // KÍCH HOẠT VIDEO GÕ PHÍM KHI NGƯỜI DÙNG NHẬP
-  if(videoStage.classList.contains('on')){
-    if(currentMode==='laptop'){
-      playClip(vids.goLap,true);
-    } else {
-      playClip(vids.bamDt,true);
-    }
-    clearTimeout(vidTypeTimer);
-    vidTypeTimer=setTimeout(()=>{
-      playClip(vids.cho,true);
-    },850);
+/* ========================= ĐỒNG BỘ GÕ PHÍM THEO THỜI GIAN THỰC ========================= */
+let vidTypeTimer=null;
+function onType(){
+  if(currentMode==='laptop'){
+    playClip(vids.goLap,true);
+  } else {
+    playClip(vids.bamDt,true);
   }
-}
-
-let pawSide=0;
-function throwLetter(ch,inp,px,py){
-  pawSide^=1;
-  mascot.classList.remove('bounce'); void mascot.offsetWidth; mascot.classList.add('bounce');
-  if(reduce) return;
-  const m=mascot.getBoundingClientRect();
-  const sx=m.left+m.width*(pawSide?.36:.6), sy=m.top+m.height*.86;
-  const el=document.createElement('div'); el.className='flyletter';
-  el.textContent=inp.type==='password'?'•':ch; document.body.appendChild(el);
-  el.animate([
-    {transform:`translate(${sx}px,${sy}px) scale(1.5)`,opacity:1},
-    {transform:`translate(${(sx+px)/2}px,${Math.min(sy,py)-40}px) scale(1.2)`,opacity:1,offset:.5},
-    {transform:`translate(${px}px,${py-6}px) scale(.8)`,opacity:0}
-  ],{duration:560,easing:'ease-in'}).onfinish=()=>el.remove();
+  clearTimeout(vidTypeTimer);
+  vidTypeTimer=setTimeout(()=>{
+    playClip(vids.cho,true);
+  },850);
 }
 
 ['classId','pin'].forEach(id=>{
   const i=$('#'+id);
   i.addEventListener('input',onType);
-  i.addEventListener('focus',()=>{const [px,py]=caretPoint(i);look(px,py)});
+  i.addEventListener('focus',onType);
 });
-(function blinker(){ setTimeout(()=>{ if(!running){mascot.classList.add('blink');setTimeout(()=>mascot.classList.remove('blink'),140);} blinker()},2200+Math.random()*2600)})();
 $('#classId').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('#pin').focus()}});
 $('#pin').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,6)});
 
 (function(){const c=store.get('att_class'); if(c){$('#classId').value=c}})();
 
 /* ========================= ĐĂNG NHẬP ========================= */
-let session=null, runFlip;
+let session=null;
 $('#loginForm').addEventListener('submit',async e=>{
   e.preventDefault();
   const classId=$('#classId').value.trim(), pin=$('#pin').value.trim();
@@ -527,17 +552,13 @@ $('#loginForm').addEventListener('submit',async e=>{
 
   if(!res||!res.ok){
     $('#errMsg').textContent=(res&&res.message)||'Đăng nhập không thành công.';
-    if(videoStage.classList.contains('on')){
-      playClip(currentMode==='laptop'?vids.lapBad:vids.dtBad);
-      setTimeout(()=>playClip(vids.cho,true),1600);
-    }
+    playClip(currentMode==='laptop'?vids.lapBad:vids.dtBad);
+    setTimeout(()=>playClip(vids.cho,true),1600);
     return;
   }
 
   // THÀNH CÔNG: PHÁT VIDEO ĂN MỪNG
-  if(videoStage.classList.contains('on')){
-    playClip(currentMode==='laptop'?vids.lapOk:vids.dtOk);
-  }
+  playClip(currentMode==='laptop'?vids.lapOk:vids.dtOk);
 
   if($('#remember').checked) store.set('att_class',classId); else store.del('att_class');
   session={classId,pin,...res};
@@ -545,29 +566,13 @@ $('#loginForm').addEventListener('submit',async e=>{
 });
 
 function flag(sel){const el=$(sel);el.classList.add('err');setTimeout(()=>el.classList.remove('err'),700)}
-const runner=$('#runner'), flipper=$('#flipper'); let runAnim=null;
 
 function setBusy(on){
   $('#goBtn').disabled=on; $('#goBtn').textContent=on?'Đang xử lý…':'Vào lớp →';
   $('#loadMsg').classList.toggle('on',on); $('.card').classList.toggle('busy',on);
-  running=on;
-  
-  if(!videoStage.classList.contains('on')){
-    mascot.classList.toggle('gone',on);
-  }
-  runner.classList.toggle('on',on);
-  if(runAnim){runAnim.cancel();runAnim=null}
-  if(on){
-    mascot.classList.remove('tilt');
-    const span=Math.min(innerWidth*.5-90,150);
-    runAnim=runner.animate([{transform:`translateX(${-span}px)`},{transform:`translateX(${span}px)`}],{duration:1500,iterations:Infinity,direction:'alternate',easing:'ease-in-out'});
-    let right=true;
-    flipper.style.transform='scaleX(1)';
-    clearInterval(setBusy._t); setBusy._t=setInterval(()=>{right=!right;flipper.style.transform=right?'scaleX(1)':'scaleX(-1)'},1500);
-  } else { clearInterval(setBusy._t); }
 }
 
-/* ========================= CYBER ========================= */
+/* ========================= CYBER TRANSITION ========================= */
 const cv=$('#fx'), ctx=cv.getContext('2d');
 let W,H,DPR,nodes=[],edges=[],t0c,bolts=[],rings=[],boost=0,fxRun=false,burstAt=0,pressed=false;
 function resize(){DPR=Math.min(2,devicePixelRatio||1);W=cv.width=innerWidth*DPR;H=cv.height=innerHeight*DPR;cv.style.width=innerWidth+'px';cv.style.height=innerHeight+'px'}
