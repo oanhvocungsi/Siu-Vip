@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIU VIP - Hệ Thống Điểm Danh & Lớp Học</title>
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --primary-light: #3b82f6;
+      --accent: #f59e0b;
+      --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #030712 100%);
+      --card-bg: rgba(255, 255, 255, 0.96);
+      --card-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow-x: hidden;
+      padding: 16px;
+    }
+
+    /* Lưới Cyber nền nhẹ */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: 
+        linear-gradient(rgba(59, 130, 246, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
+      background-size: 36px 36px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      position: relative;
+      z-index: 10;
+    }
+
+    /* ========================================================
+       MASCOT COMPONENT - THIẾT KẾ ĐA LỚP & NỘI SUY MƯỢT
+       ======================================================== */
+    .mascot-wrapper {
+      position: relative;
+      width: 240px;
+      height: 240px;
+      margin: 0 auto -20px auto;
+      z-index: 20;
+      will-change: transform;
+      animation: catBreathe 3.2s ease-in-out infinite;
+      transform-origin: bottom center;
+    }
+
+    @keyframes catBreathe {
+      0%, 100% {
+        transform: translateY(0px) scale(1, 1);
+      }
+      50% {
+        transform: translateY(-4px) scale(1.008, 0.995);
+      }
+    }
+
+    .mascot-squash {
+      transform: scale(1.03, 0.96) translateY(2px) !important;
+      transition: transform 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .mascot-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      will-change: transform;
+    }
+
+    /* Các lớp sprite tư thế (cross-fade bằng opacity) */
+    .sprite-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.18s ease;
+      will-change: opacity;
+    }
+
+    .sprite-layer.active {
+      opacity: 1;
+    }
+
+    /* Đôi mắt động */
+    .eye-layer-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    /* Hốc mắt clip để tròng không bị tràn ra ngoài da */
+    .eye-socket {
+      position: absolute;
+      overflow: hidden;
+      border-radius: 50%;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Kích thước theo tỉ lệ chuẩn 1600x1600 */
+    .eye-socket.left {
+      left: calc((642 - 75) / 1600 * 100%);
+      top: calc((687 - 80) / 1600 * 100%);
+      width: calc(150 / 1600 * 100%);
+      height: calc(160 / 1600 * 100%);
+    }
+
+    .eye-socket.right {
+      left: calc((960 - 75) / 1600 * 100%);
+      top: calc((692 - 80) / 1600 * 100%);
+      width: calc(150 / 1600 * 100%);
+      height: calc(160 / 1600 * 100%);
+    }
+
+    .iris-pupil {
+      position: absolute;
+      width: 78%;
+      height: 78%;
+      object-fit: contain;
+      will-change: transform;
+      transform: translate3d(0, 0, 0);
+      filter: drop-shadow(0 0 2px rgba(30, 58, 138, 0.4));
+    }
+
+    /* ========================================================
+       CARD & FORM STYLES
+       ======================================================== */
+    .card {
+      background: var(--card-bg);
+      border-radius: 28px;
+      box-shadow: var(--card-shadow);
+      padding: 36px 30px 28px 30px;
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .header-logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .header-logo img {
+      width: 44px;
+      height: 44px;
+      object-fit: contain;
+    }
+
+    .header-logo h1 {
+      font-size: 20px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.5px;
+    }
+
+    .header-logo h1 span {
+      color: #2563eb;
+    }
+
+    .input-group {
+      margin-bottom: 18px;
+      position: relative;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 8px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-wrapper input {
+      width: 100%;
+      height: 52px;
+      padding: 0 18px;
+      border-radius: 14px;
+      border: 1.5px solid #cbd5e1;
+      background: #f8fafc;
+      font-size: 15px;
+      font-weight: 500;
+      color: #0f172a;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .input-wrapper input:focus {
+      border-color: #2563eb;
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    .remember-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      font-size: 13.5px;
+      color: #475569;
+    }
+
+    .remember-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .remember-label input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: #2563eb;
+      cursor: pointer;
+    }
+
+    .btn-submit {
+      width: 100%;
+      height: 54px;
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .btn-submit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 24px rgba(37, 99, 235, 0.45);
+    }
+
+    .btn-submit:active {
+      transform: translateY(1px);
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Loading Running Line */
+    .loading-notice {
+      display: none;
+      margin-top: 18px;
+      text-align: center;
+      font-size: 13.5px;
+      color: #3b82f6;
+      font-weight: 600;
+      animation: pulseText 1.5s infinite;
+    }
+
+    @keyframes pulseText {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+
+    .error-msg {
+      display: none;
+      margin-top: 14px;
+      padding: 10px 14px;
+      background: #fef2f2;
+      border: 1px solid #fee2e2;
+      border-radius: 12px;
+      color: #dc2626;
+      font-size: 13px;
+      text-align: center;
+      font-weight: 500;
+    }
+
+    /* Rung lắc khi báo lỗi */
+    .shake {
+      animation: shakeCard 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+
+    @keyframes shakeCard {
+      10%, 90% { transform: translate3d(-2px, 0, 0); }
+      20%, 80% { transform: translate3d(4px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+      40%, 60% { transform: translate3d(6px, 0, 0); }
+    }
+
+    /* ========================================================
+       CYBER TRANSITION SCREEN (MÀN CHUYỂN CẢNH)
+       ======================================================== */
+    #cyber-screen {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: radial-gradient(circle at center, #0f172a 0%, #030712 100%);
+      z-index: 100;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    #cyber-screen.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    .cyber-portal {
+      position: relative;
+      width: 220px;
+      height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cyber-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 2px dashed rgba(59, 130, 246, 0.4);
+      animation: rotateRing 14s linear infinite;
+    }
+
+    .cyber-ring.r1 { width: 100%; height: 100%; }
+    .cyber-ring.r2 { width: 125%; height: 125%; border-style: dotted; border-color: rgba(99, 102, 241, 0.3); animation-duration: 22s; animation-direction: reverse; }
+
+    @keyframes rotateRing {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .cyber-btn {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border: 3px solid #38bdf8;
+      box-shadow: 0 0 35px rgba(56, 189, 248, 0.45), inset 0 0 15px rgba(56, 189, 248, 0.3);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 10;
+    }
+
+    .cyber-btn:hover {
+      box-shadow: 0 0 50px rgba(56, 189, 248, 0.7), inset 0 0 25px rgba(56, 189, 248, 0.5);
+      transform: scale(1.05);
+    }
+
+    .cyber-btn:active {
+      transform: scale(0.94);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.6);
+    }
+
+    .cyber-btn img {
+      width: 75%;
+      height: 75%;
+      object-fit: contain;
+      pointer-events: none;
+      filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+    }
+
+    .cyber-guide {
+      position: absolute;
+      right: -130px;
+      bottom: -40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .cyber-bubble {
+      background: #ffffff;
+      color: #0f172a;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 20px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      white-space: nowrap;
+      margin-bottom: 6px;
+      animation: floatBubble 2s ease-in-out infinite;
+    }
+
+    @keyframes floatBubble {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    .cyber-cat-pointer {
+      width: 90px;
+      height: 90px;
+      object-fit: contain;
+    }
+
+    /* Shockwave bùng nổ khi click */
+    .shockwave {
+      position: absolute;
+      border-radius: 50%;
+      border: 3px solid #38bdf8;
+      pointer-events: none;
+      animation: shockwaveExplode 0.7s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+    }
+
+    @keyframes shockwaveExplode {
+      0% {
+        width: 140px; height: 140px; opacity: 1;
+      }
+      100% {
+        width: 1000px; height: 1000px; opacity: 0; border-width: 1px;
+      }
+    }
+
+    /* ========================================================
+       ATTENDANCE DASHBOARD (TRANG ĐIỂM DANH)
+       ======================================================== */
+    #attendance-screen {
+      display: none;
+      width: 100%;
+      max-width: 640px;
+      background: var(--card-bg);
+      border-radius: 28px;
+      box-shadow: var(--card-shadow);
+      padding: 24px;
+      z-index: 10;
+      position: relative;
+    }
+
+    #attendance-screen.active {
+      display: block;
+      animation: fadeInScale 0.35s ease-out forwards;
+    }
+
+    @keyframes fadeInScale {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .dash-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1.5px solid #f1f5f9;
+      padding-bottom: 16px;
+      margin-bottom: 16px;
+    }
+
+    .dash-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .dash-sub {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .filter-grid select, .filter-grid input {
+      width: 100%;
+      height: 42px;
+      padding: 0 10px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      font-size: 13.5px;
+      background: #f8fafc;
+      outline: none;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .stat-badge {
+      background: #f8fafc;
+      border-radius: 14px;
+      padding: 12px 10px;
+      text-align: center;
+      border: 1px solid #e2e8f0;
+    }
+
+    .stat-badge.present { border-color: rgba(16, 185, 129, 0.4); background: #ecfdf5; color: #065f46; }
+    .stat-badge.absent-kp { border-color: rgba(239, 68, 68, 0.4); background: #fef2f2; color: #991b1b; }
+    .stat-badge.absent-cp { border-color: rgba(245, 158, 11, 0.4); background: #fffbeb; color: #92400e; }
+
+    .stat-num {
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .stat-text {
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .search-box {
+      width: 100%;
+      height: 44px;
+      padding: 0 16px;
+      border-radius: 12px;
+      border: 1px solid #cbd5e1;
+      font-size: 14px;
+      margin-bottom: 14px;
+      outline: none;
+    }
+
+    .student-list {
+      max-height: 380px;
+      overflow-y: auto;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      margin-bottom: 18px;
+    }
+
+    .student-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      background: #ffffff;
+      transition: background 0.15s;
+    }
+
+    .student-item:last-child {
+      border-bottom: none;
+    }
+
+    .student-item:hover {
+      background: #f8fafc;
+    }
+
+    .student-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stu-name {
+      font-size: 14.5px;
+      font-weight: 600;
+      color: #0f172a;
+    }
+
+    .stu-id {
+      font-size: 12.5px;
+      color: #64748b;
+    }
+
+    .attendance-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-att {
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1.5px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-att.kp {
+      background: #fee2e2;
+      color: #dc2626;
+      border-color: #fca5a5;
+    }
+
+    .btn-att.kp.active {
+      background: #dc2626;
+      color: #ffffff;
+    }
+
+    .btn-att.cp {
+      background: #fef3c7;
+      color: #d97706;
+      border-color: #fcd34d;
+    }
+
+    .btn-att.cp.active {
+      background: #d97706;
+      color: #ffffff;
+    }
+
+    .bottom-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-top: 14px;
+      border-top: 1.5px solid #f1f5f9;
+    }
+
+    .btn-secondary {
+      padding: 10px 16px;
+      border-radius: 10px;
+      background: #f1f5f9;
+      color: #475569;
+      font-size: 13.5px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-primary-action {
+      flex: 1;
+      height: 44px;
+      background: #2563eb;
+      color: #ffffff;
+      border-radius: 10px;
+      font-size: 14.5px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== MÀN ĐĂNG NHẬP & MASCOT ==================== -->
+  <div class="container" id="login-container">
+    
+    <!-- KHUNG MASCOT ĐA LỚP LINH HOẠT -->
+    <div class="mascot-wrapper" id="mascot-wrapper">
+      <div class="mascot-inner" id="mascot-inner">
+        <!-- Lớp ảnh nền mắt trống để tròng mắt lướt bên trong -->
+        <img src="assets/cat-chinh-dien-khong-mat-transparent.png" id="layer-noeyes" class="sprite-layer active" alt="Mascot Base">
+        
+        <!-- Đôi mắt chuyển động linh hoạt qua nội suy (Spring / Lerp) -->
+        <div class="eye-layer-container" id="eye-container">
+          <div class="eye-socket left">
+            <img src="assets/cat-trong-den-anime.png" class="iris-pupil" id="iris-left" alt="Left Iris">
+          </div>
+          <div class="eye-socket right">
+            <img src="assets/cat-trong-den-anime.png" class="iris-pupil" id="iris-right" alt="Right Iris">
+          </div>
+        </div>
+
+        <!-- Các tư thế phụ (Cross-fade mượt bằng opacity 150-200ms) -->
+        <img src="assets/cat-chinh-dien-nham-mat-transparent.png" id="layer-closed" class="sprite-layer" alt="Blink">
+        <img src="assets/cat-binh-thuong-transparent.png" id="layer-open" class="sprite-layer" alt="Normal">
+        <img src="assets/cat-chuan-bi-chay-transparent.png" id="layer-run1" class="sprite-layer" alt="Run 1">
+        <img src="assets/cat-chay-di-transparent.png" id="layer-run2" class="sprite-layer" alt="Run 2">
+        <img src="assets/cat-vui-ve-transparent.png" id="layer-cheer" class="sprite-layer" alt="Cheer">
+        <img src="assets/cat-chi-tay-logo-transparent.png" id="layer-point" class="sprite-layer" alt="Point">
+        <img src="assets/cat-nghieng-dau-transparent.png" id="layer-tilt" class="sprite-layer" alt="Look up">
+        <img src="assets/cat-quay-lai-transparent.png" id="layer-wave" class="sprite-layer" alt="Wave">
+      </div>
+    </div>
+
+    <!-- KHUNG ĐĂNG NHẬP -->
+    <div class="card" id="login-card">
+      <div class="header-logo">
+        <img src="assets/logo.png" alt="SIU Logo">
+        <h1>SIU <span>ATTENDANCE</span></h1>
+      </div>
+
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="input-group">
+          <label for="class-code">Mã lớp học phần</label>
+          <div class="input-wrapper">
+            <input type="text" id="class-code" placeholder="VD: 241_71ITEC20203_01" required autocomplete="off">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="pin-code">Mã PIN (6 số)</label>
+          <div class="input-wrapper">
+            <input type="password" id="pin-code" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="••••••" required>
+          </div>
+        </div>
+
+        <div class="remember-row">
+          <label class="remember-label">
+            <input type="checkbox" id="remember-me">
+            <span>Ghi nhớ mã lớp trên máy này</span>
+          </label>
+        </div>
+
+        <button type="submit" class="btn-submit" id="btn-login">
+          <span>Vào lớp</span>
+        </button>
+
+        <div class="loading-notice" id="loading-notice">
+          🐾 Đang tìm lớp, mèo đang tăng tốc chạy...
+        </div>
+
+        <div class="error-msg" id="error-msg"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MÀN CHUYỂN CẢNH CYBER ==================== -->
+  <div id="cyber-screen">
+    <div class="cyber-portal">
+      <div class="cyber-ring r1"></div>
+      <div class="cyber-ring r2"></div>
+      <button class="cyber-btn" id="cyber-core-btn" onclick="triggerCyberLaunch()">
+        <img src="assets/logo.png" alt="Portal Button">
+      </button>
+
+      <div class="cyber-guide">
+        <div class="cyber-bubble">Nhấn vào nè!</div>
+        <img src="assets/cat-chi-tay-logo-transparent.png" class="cyber-cat-pointer" alt="Point Mascot">
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MÀN ĐIỂM DANH HOÀN CHỈNH ==================== -->
+  <div id="attendance-screen">
+    <div class="dash-header">
+      <div>
+        <div class="dash-title" id="dash-class-name">Lập trình Web - 241_71ITEC</div>
+        <div class="dash-sub">Sĩ số: <span id="dash-total">40</span> sinh viên</div>
+      </div>
+      <button class="btn-secondary" onclick="logout()">Đổi lớp</button>
+    </div>
+
+    <!-- Hàng lọc theo yêu cầu -->
+    <div class="filter-grid">
+      <select id="select-session">
+        <option>Buổi 1</option>
+        <option>Buổi 2</option>
+        <option>Buổi 3</option>
+        <option selected>Buổi 4</option>
+        <option>Buổi 5</option>
+      </select>
+      <select id="select-status">
+        <option value="normal">Có học</option>
+        <option value="off">Giảng viên nghỉ</option>
+      </select>
+      <input type="date" id="select-date">
+    </div>
+
+    <!-- 3 Ô thống kê -->
+    <div class="stats-row">
+      <div class="stat-badge present">
+        <div class="stat-num" id="stat-present">38</div>
+        <div class="stat-text">Có mặt</div>
+      </div>
+      <div class="stat-badge absent-kp">
+        <div class="stat-num" id="stat-kp">1</div>
+        <div class="stat-text">Không phép</div>
+      </div>
+      <div class="stat-badge absent-cp">
+        <div class="stat-num" id="stat-cp">1</div>
+        <div class="stat-text">Có phép</div>
+      </div>
+    </div>
+
+    <!-- Tìm kiếm sinh viên -->
+    <input type="text" class="search-box" id="search-student" placeholder="🔍 Tìm theo MSSV hoặc họ tên..." oninput="filterStudents()">
+
+    <!-- Danh sách điểm danh sinh viên -->
+    <div class="student-list" id="student-list-container">
+      <!-- Sinh viên sẽ được render động bằng JavaScript -->
+    </div>
+
+    <!-- Thanh dưới -->
+    <div class="bottom-bar">
+      <button class="btn-secondary" onclick="resetAllAbsent()">Bỏ chọn tất cả</button>
+      <button class="btn-secondary" onclick="reportWrongList()">Báo sai danh sách</button>
+      <button class="btn-primary-action" onclick="submitAttendance()">Gửi điểm danh</button>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       1. CẤU HÌNH API BACKEND CHO GOOGLE APPS SCRIPT
+       ========================================================================== */
+    const isGAS = typeof google !== 'undefined' && google.script && google.script.run;
+
+    function callGAS(funcName, ...args) {
+      return new Promise((resolve, reject) => {
+        if (!isGAS) {
+          // Mock data khi chạy trực tiếp ngoài trình duyệt
+          setTimeout(() => {
+            if (funcName === 'apiLogin') {
+              const [cls, pin] = args;
+              if (pin === '000000') {
+                reject(new Error('Mã PIN không chính xác (mẫu test lỗi)!'));
+              } else {
+                resolve({
+                  ok: true,
+                  cls: cls || '241_71ITEC20203_01',
+                  students: [
+                    { mssv: '21010001', name: 'Nguyễn Văn An' },
+                    { mssv: '21010002', name: 'Trần Thị Bích' },
+                    { mssv: '21010003', name: 'Lê Hoàng Cường' },
+                    { mssv: '21010004', name: 'Phạm Đức Duy' },
+                    { mssv: '21010005', name: 'Vũ Ngọc Hân' },
+                    { mssv: '21010006', name: 'Đặng Minh Khôi' },
+                    { mssv: '21010007', name: 'Bùi Gia Linh' },
+                    { mssv: '21010008', name: 'Hoàng Nhật Nam' }
+                  ]
+                });
+              }
+            } else if (funcName === 'apiSubmit') {
+              resolve({ ok: true });
+            } else {
+              resolve({ ok: true });
+            }
+          }, 1200);
+          return;
+        }
+
+        google.script.run
+          .withSuccessHandler(resolve)
+          .withFailureHandler(reject)[funcName](...args);
+      });
+    }
+
+    /* ==========================================================================
+       2. HỆ THỐNG ĐIỀU KHIỂN MASCOT LINH HOẠT 60FPS (LERP & SPRING PHYSICS)
+       ========================================================================== */
+    const mascotWrapper = document.getElementById('mascot-wrapper');
+    const mascotInner = document.getElementById('mascot-inner');
+    const eyeContainer = document.getElementById('eye-container');
+    const irisLeft = document.getElementById('iris-left');
+    const irisRight = document.getElementById('iris-right');
+
+    const layers = {
+      noeyes: document.getElementById('layer-noeyes'),
+      closed: document.getElementById('layer-closed'),
+      open: document.getElementById('layer-open'),
+      run1: document.getElementById('layer-run1'),
+      run2: document.getElementById('layer-run2'),
+      cheer: document.getElementById('layer-cheer'),
+      point: document.getElementById('layer-point'),
+      tilt: document.getElementById('layer-tilt'),
+      wave: document.getElementById('layer-wave')
+    };
+
+    // Tọa độ mục tiêu và hiện tại cho mắt (LERP)
+    let targetEyeX = 0;
+    let targetEyeY = 0;
+    let currentEyeX = 0;
+    let currentEyeY = 0;
+
+    // Góc nghiêng đầu của mèo
+    let targetHeadTilt = 0;
+    let currentHeadTilt = 0;
+
+    // Giới hạn chuyển động tròng mắt (±15px theo tỉ lệ 1600x1600)
+    // Trên display 240px: 15 * (240 / 1600) = ~2.25px
+    const MAX_EYE_OFFSET = 12; // Giới hạn pixel an toàn trong hốc mắt
+    const LERP_FACTOR = 0.15; // Hệ số mượt mà mỗi frame
+
+    let isTyping = false;
+    let isRunning = false;
+    let currentActiveLayer = 'noeyes';
+
+    // Đổi tư thế có cross-fade bằng opacity (150-200ms)
+    function setPose(layerKey) {
+      if (currentActiveLayer === layerKey) return;
+      
+      // Ẩn lớp mắt nếu đang ở tư thế toàn thân đặc biệt
+      if (layerKey === 'noeyes') {
+        eyeContainer.style.opacity = '1';
+      } else {
+        eyeContainer.style.opacity = '0';
+      }
+
+      Object.keys(layers).forEach(k => {
+        if (layers[k]) {
+          layers[k].classList.remove('active');
+        }
+      });
+
+      if (layers[layerKey]) {
+        layers[layerKey].classList.add('active');
+        currentActiveLayer = layerKey;
+      }
+    }
+
+    // VÒNG LẶP NỘI SUY CHUYỂN ĐỘNG 60FPS
+    function renderMascotFrame() {
+      // Nội suy LERP: pos += (target - pos) * 0.15
+      currentEyeX += (targetEyeX - currentEyeX) * LERP_FACTOR;
+      currentEyeY += (targetEyeY - currentEyeY) * LERP_FACTOR;
+      currentHeadTilt += (targetHeadTilt - currentHeadTilt) * 0.08;
+
+      // Cập nhật transform cho tròng mắt (chỉ dùng translate3d để không gây reflow)
+      const eyeTransform = `translate3d(${currentEyeX.toFixed(2)}px, ${currentEyeY.toFixed(2)}px, 0)`;
+      irisLeft.style.transform = eyeTransform;
+      irisRight.style.transform = eyeTransform;
+
+      // Cập nhật nghiêng đầu nhẹ theo hướng nhìn
+      mascotInner.style.transform = `rotate(${currentHeadTilt.toFixed(2)}deg)`;
+
+      requestAnimationFrame(renderMascotFrame);
+    }
+    requestAnimationFrame(renderMascotFrame);
+
+    // XỬ LÝ CON TRỎ CHUỘT
+    window.addEventListener('mousemove', (e) => {
+      if (isTyping || isRunning) return;
+
+      const rect = mascotWrapper.getBoundingClientRect();
+      const mascotCenterX = rect.left + rect.width / 2;
+      const mascotCenterY = rect.top + rect.height / 2;
+
+      const dx = e.clientX - mascotCenterX;
+      const dy = e.clientY - mascotCenterY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist > 0) {
+        const factor = Math.min(dist / 300, 1);
+        targetEyeX = (dx / dist) * MAX_EYE_OFFSET * factor;
+        targetEyeY = (dy / dist) * (MAX_EYE_OFFSET * 0.75) * factor;
+
+        // Nghiêng đầu tối đa ±3 độ
+        targetHeadTilt = Math.max(-3, Math.min(3, (dx / 300) * 3));
+      }
+    });
+
+    // CHỚP MẮT TỰ NHIÊN (3 - 5 GIÂY / LẦN)
+    function scheduleBlink() {
+      const interval = Math.random() * 2000 + 3000; // 3-5s
+      setTimeout(() => {
+        if (!isRunning && currentActiveLayer === 'noeyes') {
+          // Đổi sang mắt nhắm trong 130ms rồi đổi lại
+          layers.closed.classList.add('active');
+          eyeContainer.style.opacity = '0';
+
+          setTimeout(() => {
+            layers.closed.classList.remove('active');
+            eyeContainer.style.opacity = '1';
+            scheduleBlink();
+          }, 130);
+        } else {
+          scheduleBlink();
+        }
+      }, interval);
+    }
+    scheduleBlink();
+
+    // MẮT BÁM THEO VỊ TRÍ CON TRỎ GÕ PHÍM (CARET)
+    function trackInputCaret(input) {
+      if (isRunning) return;
+      isTyping = true;
+
+      const rect = input.getBoundingClientRect();
+      const mascotRect = mascotWrapper.getBoundingClientRect();
+      const mascotCenterX = mascotRect.left + mascotRect.width / 2;
+      const mascotCenterY = mascotRect.top + mascotRect.height / 2;
+
+      // Tính vị trí tương đối của con trỏ chữ trong ô nhập
+      const charWidth = 9;
+      const caretX = rect.left + Math.min(input.selectionStart * charWidth, rect.width - 20) + 15;
+      const caretY = rect.top + rect.height / 2;
+
+      const dx = caretX - mascotCenterX;
+      const dy = caretY - mascotCenterY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      targetEyeX = Math.max(-MAX_EYE_OFFSET, Math.min(MAX_EYE_OFFSET, (dx / dist) * MAX_EYE_OFFSET));
+      targetEyeY = Math.max(-MAX_EYE_OFFSET * 0.75, Math.min(MAX_EYE_OFFSET * 0.75, (dy / dist) * MAX_EYE_OFFSET));
+      targetHeadTilt = (dx / 400) * 2.5;
+
+      clearTimeout(input._typingTimer);
+      input._typingTimer = setTimeout(() => {
+        isTyping = false;
+      }, 1200);
+    }
+
+    const classInput = document.getElementById('class-code');
+    const pinInput = document.getElementById('pin-code');
+
+    [classInput, pinInput].forEach(inp => {
+      inp.addEventListener('input', () => trackInputCaret(inp));
+      inp.addEventListener('focus', () => trackInputCaret(inp));
+      inp.addEventListener('blur', () => {
+        setTimeout(() => { isTyping = false; }, 200);
+      });
+    });
+
+    // NHỚ MÃ LỚP TRÊN THIẾT BỊ
+    const savedClass = localStorage.getItem('siu_class_code');
+    if (savedClass) {
+      classInput.value = savedClass;
+      document.getElementById('remember-me').checked = true;
+    }
+
+    /* ==========================================================================
+       3. XỬ LÝ ĐĂNG NHẬP, LOADING MÈO CHẠY VÀ CHUYỂN CẢNH
+       ========================================================================== */
+    let runInterval = null;
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const cls = classInput.value.trim();
+      const pin = pinInput.value.trim();
+      const remember = document.getElementById('remember-me').checked;
+
+      if (remember) {
+        localStorage.setItem('siu_class_code', cls);
+      } else {
+        localStorage.removeItem('siu_class_code');
+      }
+
+      // Khóa nút và khởi động trạng thái chạy
+      const btn = document.getElementById('btn-login');
+      const notice = document.getElementById('loading-notice');
+      const errBox = document.getElementById('error-msg');
+      errBox.style.display = 'none';
+      btn.disabled = true;
+      notice.style.display = 'block';
+
+      // Kích hoạt mèo chạy đổi luân phiên run1 và run2
+      isRunning = true;
+      let step = 0;
+      setPose('run1');
+      runInterval = setInterval(() => {
+        step = 1 - step;
+        setPose(step === 0 ? 'run1' : 'run2');
+      }, 180);
+
+      try {
+        const res = await callGAS('apiLogin', cls, pin);
+        clearInterval(runInterval);
+        isRunning = false;
+
+        // Thành công: Squash & Stretch nhẹ và đổi sang vui vẻ
+        mascotWrapper.classList.add('mascot-squash');
+        setPose('cheer');
+        setTimeout(() => mascotWrapper.classList.remove('mascot-squash'), 220);
+
+        setTimeout(() => {
+          // Ẩn màn đăng nhập, hiện màn Cyber
+          document.getElementById('login-container').style.display = 'none';
+          const cyberScreen = document.getElementById('cyber-screen');
+          cyberScreen.classList.add('active');
+          window.sessionData = res;
+        }, 600);
+
+      } catch (err) {
+        clearInterval(runInterval);
+        isRunning = false;
+        btn.disabled = false;
+        notice.style.display = 'none';
+
+        // Lỗi: Rung lắc card và đổi sang tư thế bối rối / nghiêng đầu
+        setPose('tilt');
+        const card = document.getElementById('login-card');
+        card.classList.add('shake');
+        errBox.textContent = err.message || 'Mã lớp hoặc PIN không hợp lệ!';
+        errBox.style.display = 'block';
+
+        setTimeout(() => {
+          card.classList.remove('shake');
+          setPose('noeyes');
+        }, 1200);
+      }
+    }
+
+    // KÍCH HOẠT HIỆU ỨNG CYBER
+    function triggerCyberLaunch() {
+      const btn = document.getElementById('cyber-core-btn');
+      
+      // Tạo hiệu ứng sóng xung kích lan tỏa (Shockwave)
+      const shock = document.createElement('div');
+      shock.className = 'shockwave';
+      btn.parentElement.appendChild(shock);
+
+      btn.style.transform = 'scale(0.88)';
+      
+      setTimeout(() => {
+        btn.style.transform = 'scale(1.1)';
+        const cyberScreen = document.getElementById('cyber-screen');
+        cyberScreen.style.opacity = '0';
+
+        setTimeout(() => {
+          cyberScreen.classList.remove('active');
+          initAttendanceDashboard(window.sessionData);
+        }, 400);
+      }, 250);
+    }
+
+    /* ==========================================================================
+       4. TRANG ĐIỂM DANH SINH VIÊN (ATTENDANCE DASHBOARD)
+       ========================================================================== */
+    let studentData = [];
+    let attendanceMap = {}; // { mssv: 'KP' | 'CP' }
+
+    function initAttendanceDashboard(data) {
+      const screen = document.getElementById('attendance-screen');
+      screen.classList.add('active');
+
+      document.getElementById('select-date').valueAsDate = new Date();
+      document.getElementById('dash-class-name').textContent = `Lớp: ${data.cls}`;
+      
+      studentData = data.students || [];
+      document.getElementById('dash-total').textContent = studentData.length;
+      
+      renderStudentList(studentData);
+      updateStats();
+    }
+
+    function renderStudentList(list) {
+      const container = document.getElementById('student-list-container');
+      container.innerHTML = '';
+
+      list.forEach(stu => {
+        const item = document.createElement('div');
+        item.className = 'student-item';
+        const currentStatus = attendanceMap[stu.mssv] || '';
+
+        item.innerHTML = `
+          <div class="student-info">
+            <span class="stu-name">${stu.name}</span>
+            <span class="stu-id">${stu.mssv}</span>
+          </div>
+          <div class="attendance-actions">
+            <button class="btn-att kp ${currentStatus === 'KP' ? 'active' : ''}" onclick="toggleStatus('${stu.mssv}', 'KP')">Không phép</button>
+            <button class="btn-att cp ${currentStatus === 'CP' ? 'active' : ''}" onclick="toggleStatus('${stu.mssv}', 'CP')">Có phép</button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function toggleStatus(mssv, type) {
+      if (attendanceMap[mssv] === type) {
+        delete attendanceMap[mssv]; // Bấm lại để bỏ chọn
+      } else {
+        attendanceMap[mssv] = type;
+      }
+      filterStudents();
+      updateStats();
+    }
+
+    function updateStats() {
+      let kp = 0;
+      let cp = 0;
+      Object.values(attendanceMap).forEach(v => {
+        if (v === 'KP') kp++;
+        if (v === 'CP') cp++;
+      });
+
+      const total = studentData.length;
+      const present = total - (kp + cp);
+
+      document.getElementById('stat-present').textContent = present;
+      document.getElementById('stat-kp').textContent = kp;
+      document.getElementById('stat-cp').textContent = cp;
+    }
+
+    function filterStudents() {
+      const q = document.getElementById('search-student').value.toLowerCase().trim();
+      const filtered = studentData.filter(s => 
+        s.name.toLowerCase().includes(q) || s.mssv.includes(q)
+      );
+      renderStudentList(filtered);
+    }
+
+    function resetAllAbsent() {
+      attendanceMap = {};
+      filterStudents();
+      updateStats();
+    }
+
+    function reportWrongList() {
+      const note = prompt('Nhập phản ánh hoặc lỗi danh sách lớp:');
+      if (note) {
+        callGAS('apiReportWrong', classInput.value, note).then(() => {
+          alert('Đã gửi báo cáo đến giảng viên / quản lý hệ thống!');
+        });
+      }
+    }
+
+    async function submitAttendance() {
+      const absentList = Object.keys(attendanceMap).map(mssv => ({
+        mssv: mssv,
+        type: attendanceMap[mssv]
+      }));
+
+      const payload = {
+        classCode: classInput.value,
+        session: document.getElementById('select-session').value,
+        status: document.getElementById('select-status').value,
+        date: document.getElementById('select-date').value,
+        absent: absentList
+      };
+
+      try {
+        await callGAS('apiSubmit', payload);
+        alert('🎉 Đã lưu kết quả điểm danh thành công!');
+      } catch (err) {
+        alert('Lỗi lưu điểm danh: ' + err.message);
+      }
+    }
+
+    function logout() {
+      document.getElementById('attendance-screen').classList.remove('active');
+      document.getElementById('login-container').style.display = 'block';
+      document.getElementById('btn-login').disabled = false;
+      document.getElementById('loading-notice').style.display = 'none';
+      setPose('noeyes');
+    }
+  </script>
+</body>
+</html>
