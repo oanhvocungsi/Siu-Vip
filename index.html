@@ -3,22 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>SIU VIP - Hệ Thống Điểm Danh & Lớp Học</title>
+  <title>SIU VIP - Hệ Thống Điểm Danh & Khởi Động Điện Ảnh</title>
   <style>
     :root {
+      --bg-black: #030712;
+      --cyan: #00f3ff;
+      --cyan-glow: rgba(0, 243, 255, 0.65);
+      --cyan-dim: rgba(0, 243, 255, 0.2);
+      --gold: #fbbf24;
+      --red-flag: #da251d;
       --primary: #1e3a8a;
       --primary-accent: #2563eb;
-      --primary-light: #3b82f6;
-      --neon-cyan: #38bdf8;
-      --bg-dark: #070d18;
-      --card-bg: rgba(255, 255, 255, 0.95);
-      --card-border: rgba(255, 255, 255, 0.8);
-      --card-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.45), 0 0 40px rgba(37, 99, 235, 0.15);
-      --text-main: #0f172a;
-      --text-muted: #64748b;
-      --success: #10b981;
-      --danger: #ef4444;
-      --warning: #f59e0b;
     }
 
     * {
@@ -30,30 +25,486 @@
     }
 
     body {
+      background-color: var(--bg-black);
+      color: #ffffff;
       min-height: 100vh;
-      background: radial-gradient(circle at 50% 15%, #1e1b4b 0%, #0c1222 55%, var(--bg-dark) 100%);
-      color: var(--text-main);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ========================================================
+       PHẦN 1: MÀN HÌNH INTRO SCI-FI BOOT (NỀN ĐEN TUYỀN)
+       ======================================================== */
+    #intro-screen {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: #000000;
+      z-index: 1000;
       display: flex;
-      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      opacity: 1;
+      transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    #intro-screen.finished {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Lưới vi mạch nền mờ nhẹ */
+    .intro-grid {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: 
+        radial-gradient(circle at center, rgba(0, 243, 255, 0.08) 0%, transparent 70%),
+        linear-gradient(rgba(0, 243, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 243, 255, 0.04) 1px, transparent 1px);
+      background-size: 100% 100%, 48px 48px, 48px 48px;
+      pointer-events: none;
+    }
+
+    /* Canvas vẽ tia lửa điện bùng nổ */
+    #sparks-canvas {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 25;
+    }
+
+    /* 4 GÓC MÀN HÌNH - PADDING TƯƠNG ĐỐI CLAMP() */
+    .hud-corner {
+      position: absolute;
+      z-index: 30;
+      opacity: 0;
+      transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .hud-corner.active {
+      opacity: 1;
+      transform: none !important;
+    }
+
+    /* GÓC TRÁI TRÊN: LOGO SIU + VÒNG QUAY NĂNG LƯỢNG */
+    .corner-tl {
+      top: max(16px, 3.5vmin);
+      left: max(16px, 3.5vmin);
+      transform: translate(-10px, -10px);
+    }
+
+    .siu-logo-orbit {
+      position: relative;
+      width: clamp(70px, 12vmin, 96px);
+      height: clamp(70px, 12vmin, 96px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .siu-logo-orbit svg {
+      position: absolute;
+      width: 100%; height: 100%;
+      overflow: visible;
+    }
+
+    /* Vòng tròn vẽ nét kiểu Oppo (0.5s - 2.5s) */
+    .circle-draw {
+      stroke: var(--cyan);
+      stroke-width: 2.5;
+      fill: none;
+      stroke-dasharray: 100;
+      stroke-dashoffset: 100;
+      transform-origin: center;
+      filter: drop-shadow(0 0 6px var(--cyan));
+      animation: drawCircle 2s cubic-bezier(0.16, 1, 0.3, 1) 0.5s forwards;
+    }
+
+    @keyframes drawCircle {
+      to { stroke-dashoffset: 0; }
+    }
+
+    /* Vành tia lửa quay vĩnh cửu (từ 2.5s) */
+    .spark-ring {
+      stroke: var(--cyan);
+      stroke-width: 1.5;
+      stroke-dasharray: 6 14;
+      fill: none;
+      opacity: 0;
+      transform-origin: center;
+      animation: spinRing 8s linear infinite;
+    }
+
+    .spark-ring.spinning {
+      opacity: 0.8;
+      transition: opacity 0.4s ease;
+    }
+
+    @keyframes spinRing {
+      to { transform: rotate(360deg); }
+    }
+
+    .logo-img {
+      width: 62%;
+      height: 62%;
+      object-fit: contain;
+      border-radius: 50%;
+      opacity: 0;
+      transform: scale(0.85);
+      animation: fadeInLogo 1.6s cubic-bezier(0.16, 1, 0.3, 1) 0.8s forwards;
+      filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.4));
+    }
+
+    @keyframes fadeInLogo {
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* GÓC PHẢI TRÊN: CỜ VIỆT NAM CHUẨN TỈ LỆ VÀNG */
+    .corner-tr {
+      top: max(16px, 3.5vmin);
+      right: max(16px, 3.5vmin);
+      transform: translate(10px, -10px);
+    }
+
+    .flag-vn {
+      width: clamp(56px, 9vmin, 80px);
+      height: clamp(38px, 6vmin, 54px);
+      background: var(--red-flag);
+      border-radius: 4px;
+      box-shadow: 0 0 20px rgba(218, 37, 29, 0.5), 0 0 5px rgba(255, 255, 255, 0.3);
+      display: flex;
       align-items: center;
       justify-content: center;
       position: relative;
-      overflow-x: hidden;
-      padding: 20px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
-    /* Lưới Cyber đa tầng ánh sáng */
-    body::before {
+    .flag-vn svg {
+      width: 44%;
+      height: 44%;
+      fill: #ffff00;
+      filter: drop-shadow(0 0 6px #ffea00);
+    }
+
+    /* GÓC TRÁI DƯỚI: BIỂU TƯỢNG QUỐC TẾ GLOBE SCI-FI */
+    .corner-bl {
+      bottom: max(16px, 3.5vmin);
+      left: max(16px, 3.5vmin);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transform: translate(-10px, 10px);
+    }
+
+    .globe-icon {
+      width: clamp(36px, 6vmin, 48px);
+      height: clamp(36px, 6vmin, 48px);
+      border-radius: 50%;
+      border: 1.5px solid var(--cyan);
+      box-shadow: 0 0 15px var(--cyan-dim);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: spinGlobe 14s linear infinite;
+    }
+
+    @keyframes spinGlobe {
+      to { transform: rotate(360deg); }
+    }
+
+    .globe-icon::before {
       content: "";
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-image: 
-        radial-gradient(circle at 50% 20%, rgba(56, 189, 248, 0.12) 0%, transparent 60%),
-        linear-gradient(rgba(59, 130, 246, 0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
-      background-size: 100% 100%, 36px 36px, 36px 36px;
+      position: absolute;
+      width: 45%; height: 100%;
+      border-radius: 50%;
+      border: 1px dashed var(--cyan);
+    }
+
+    .globe-icon::after {
+      content: "";
+      position: absolute;
+      width: 100%; height: 45%;
+      border-radius: 50%;
+      border: 1px dashed var(--cyan);
+    }
+
+    .global-text {
+      font-size: clamp(10px, 1.8vmin, 12px);
+      letter-spacing: 2px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+
+    /* GÓC PHẢI DƯỚI: CHỮ "ASEAN NATIONAL CEO" */
+    .corner-br {
+      bottom: max(16px, 3.5vmin);
+      right: max(16px, 3.5vmin);
+      text-align: right;
+      transform: translate(10px, 10px);
+    }
+
+    .asean-title {
+      font-size: clamp(18px, 3.2vmin, 26px);
+      font-weight: 900;
+      letter-spacing: 5px;
+      background: linear-gradient(135deg, #ffffff 0%, var(--cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
+    }
+
+    .asean-sub {
+      font-size: clamp(9px, 1.5vmin, 11px);
+      letter-spacing: 3.5px;
+      color: #64748b;
+      margin-top: 2px;
+      font-weight: 700;
+    }
+
+    /* ========================================================
+       CHÍNH GIỮA: CHIP TRUNG TÂM + 3 TAM GIÁC ROBOT
+       ======================================================== */
+    .center-stage {
+      position: relative;
+      width: min(85vw, 420px);
+      height: min(85vw, 420px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+    }
+
+    /* SVG 4 đường dây chính lan ra 4 góc màn hình */
+    #wires-svg {
+      position: absolute;
+      top: -100vh; left: -100vw;
+      width: 300vw; height: 300vh;
       pointer-events: none;
-      z-index: 0;
+      z-index: 10;
+    }
+
+    .conduit-wire {
+      stroke: var(--cyan);
+      stroke-width: 2;
+      fill: none;
+      stroke-dasharray: 100;
+      stroke-dashoffset: 100;
+      filter: drop-shadow(0 0 5px var(--cyan));
+      transition: stroke-dashoffset 1.7s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .conduit-wire.active {
+      stroke-dashoffset: 0;
+    }
+
+    /* Chip trung tâm hình vuông bo góc vi mạch */
+    .core-chip {
+      width: clamp(86px, 16vmin, 120px);
+      height: clamp(86px, 16vmin, 120px);
+      background: radial-gradient(circle at center, #0f172a 0%, #030712 100%);
+      border: 2px solid var(--cyan);
+      border-radius: 24px;
+      box-shadow: 0 0 35px var(--cyan-dim), inset 0 0 20px rgba(0, 243, 255, 0.25);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.25s ease;
+      cursor: pointer;
+    }
+
+    .core-chip.pressed {
+      transform: scale(0.90);
+      box-shadow: 0 0 65px var(--cyan), inset 0 0 35px var(--cyan);
+    }
+
+    .chip-inner-logo {
+      width: 60%;
+      height: 60%;
+      object-fit: contain;
+      filter: drop-shadow(0 0 8px rgba(0, 243, 255, 0.6));
+    }
+
+    /* 3 Tam giác robot mecha */
+    .tri-armor {
+      position: absolute;
+      width: clamp(34px, 6.5vmin, 44px);
+      height: clamp(34px, 6.5vmin, 44px);
+      z-index: 18;
+      transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.2s ease;
+      cursor: pointer;
+    }
+
+    .tri-armor svg {
+      width: 100%; height: 100%;
+      overflow: visible;
+    }
+
+    .tri-armor polygon {
+      fill: #0c1527;
+      stroke: var(--cyan);
+      stroke-width: 2.5;
+      filter: drop-shadow(0 0 4px var(--cyan-dim));
+      transition: all 0.2s ease;
+    }
+
+    .tri-armor.lit polygon {
+      fill: #00f3ff;
+      filter: drop-shadow(0 0 16px #00f3ff);
+    }
+
+    .tri-armor.pressed {
+      transform: scale(0.82) !important;
+    }
+
+    /* Vị trí 3 tam giác quanh chip */
+    .tri-top {
+      top: 15%;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .tri-bl {
+      bottom: 20%;
+      left: 20%;
+      transform: rotate(-120deg);
+    }
+
+    .tri-br {
+      bottom: 20%;
+      right: 20%;
+      transform: rotate(120deg);
+    }
+
+    /* ========================================================
+       CHỮ "VIỆT NAM" LOANG VẾT SƠN NĂNG LƯỢNG (4.6)
+       ======================================================== */
+    .vn-title-wrapper {
+      position: absolute;
+      bottom: max(55px, 9vmin);
+      left: 50%;
+      transform: translateX(-50%);
+      width: max-content;
+      text-align: center;
+      z-index: 25;
+      pointer-events: none;
+    }
+
+    .vn-text {
+      font-size: clamp(24px, 5vmin, 42px);
+      font-weight: 900;
+      letter-spacing: clamp(6px, 1.5vmin, 14px);
+      text-transform: uppercase;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    /* Lớp chữ mờ chìm dưới nền đen ban đầu */
+    .vn-dim {
+      color: #1e293b;
+      opacity: 0.6;
+    }
+
+    /* Lớp chữ màu rực rỡ loang dần bằng clip-path */
+    .vn-colored {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: linear-gradient(135deg, #ef4444 0%, #f59e0b 50%, #facc15 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 25px rgba(245, 158, 11, 0.7));
+      clip-path: circle(0% at 50% 0%);
+      transition: clip-path 1.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .vn-colored.spread {
+      clip-path: circle(150% at 50% 0%);
+    }
+
+    /* NÚT VÀO TRANG CHÍNH & BỎ QUA */
+    .btn-enter-main {
+      position: absolute;
+      bottom: max(16px, 3vmin);
+      left: 50%;
+      transform: translateX(-50%);
+      height: 44px;
+      padding: 0 28px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--cyan) 0%, #2563eb 100%);
+      color: #000000;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 0 25px rgba(0, 243, 255, 0.6);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 50;
+      white-space: nowrap;
+    }
+
+    .btn-enter-main.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .btn-enter-main:hover {
+      transform: translateX(-50%) scale(1.06);
+      box-shadow: 0 0 35px var(--cyan);
+    }
+
+    .btn-skip {
+      position: absolute;
+      bottom: max(12px, 2.5vmin);
+      right: max(16px, 3vmin);
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #94a3b8;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 11.5px;
+      cursor: pointer;
+      z-index: 60;
+      opacity: 0;
+      transition: all 0.3s;
+    }
+
+    .btn-skip.active {
+      opacity: 0.7;
+    }
+
+    .btn-skip:hover {
+      opacity: 1;
+      border-color: var(--cyan);
+      color: #fff;
+    }
+
+    /* ========================================================
+       PHẦN 2: WEB APP CHÍNH (MASCOT 60FPS + ĐIỂM DANH)
+       ======================================================== */
+    #main-app {
+      display: none;
+      opacity: 0;
+      min-height: 100vh;
+      width: 100%;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 16px;
+      position: relative;
+      background: radial-gradient(circle at 50% 15%, #1e1b4b 0%, #0c1222 55%, var(--bg-black) 100%);
+      transition: opacity 0.5s ease;
+    }
+
+    #main-app.active {
+      display: flex;
+      opacity: 1;
     }
 
     .container {
@@ -63,9 +514,6 @@
       z-index: 10;
     }
 
-    /* ========================================================
-       MASCOT COMPONENT - CHUYỂN ĐỘNG LINH HOẠT 60FPS
-       ======================================================== */
     .mascot-stage {
       position: relative;
       width: 250px;
@@ -79,12 +527,8 @@
     }
 
     @keyframes catBreath {
-      0%, 100% {
-        transform: translateY(0px) scale(1, 1);
-      }
-      50% {
-        transform: translateY(-4px) scale(1.012, 0.992);
-      }
+      0%, 100% { transform: translateY(0px) scale(1, 1); }
+      50% { transform: translateY(-4px) scale(1.012, 0.992); }
     }
 
     .mascot-squash {
@@ -100,13 +544,10 @@
       transform-origin: 50% 75%;
     }
 
-    /* Các tư thế lớp sprite - Cross-fade mượt bằng opacity 180ms */
     .sprite-layer {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       object-fit: contain;
       pointer-events: none;
       opacity: 0;
@@ -114,17 +555,12 @@
       will-change: opacity;
     }
 
-    .sprite-layer.active {
-      opacity: 1;
-    }
+    .sprite-layer.active { opacity: 1; }
 
-    /* ĐÔI MẮT NHÌN THEO - TỈ LỆ CHUẨN 1024x1024 ĐÃ ĐO ĐẠC PIXEL */
     .eye-layer-container {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       pointer-events: none;
       z-index: 5;
       transition: opacity 0.15s ease;
@@ -132,8 +568,7 @@
 
     .eye-socket {
       position: absolute;
-      width: 10.15%;  /* 104px / 1024px */
-      height: 10.15%; /* 104px / 1024px */
+      width: 10.15%; height: 10.15%;
       border-radius: 50%;
       overflow: hidden;
       display: flex;
@@ -142,22 +577,12 @@
       pointer-events: none;
     }
 
-    /* Tâm mắt trái (412, 442) -> left: 412 - 52 = 360 (35.15%), top: 442 - 52 = 390 (38.08%) */
-    .eye-socket.left {
-      left: 35.15%;
-      top: 38.08%;
-    }
-
-    /* Tâm mắt phải (612, 442) -> left: 612 - 52 = 560 (54.68%), top: 38.08% */
-    .eye-socket.right {
-      left: 54.68%;
-      top: 38.08%;
-    }
+    .eye-socket.left { left: 35.15%; top: 38.08%; }
+    .eye-socket.right { left: 54.68%; top: 38.08%; }
 
     .iris-pupil {
       position: absolute;
-      width: 80%;
-      height: 80%;
+      width: 80%; height: 80%;
       object-fit: contain;
       will-change: transform;
       transform: translate3d(0, 0, 0);
@@ -165,17 +590,15 @@
       border-radius: 50%;
     }
 
-    /* ========================================================
-       LOGIN CARD GLASSMORPHISM HIỆN ĐẠI
-       ======================================================== */
+    /* CARD GLASSMORPHISM */
     .card {
-      background: var(--card-bg);
+      background: rgba(255, 255, 255, 0.96);
       border-radius: 32px;
-      box-shadow: var(--card-shadow);
+      box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.5), 0 0 40px rgba(37, 99, 235, 0.2);
       padding: 40px 32px 32px 32px;
       backdrop-filter: blur(20px);
-      border: 1.5px solid var(--card-border);
-      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+      border: 1.5px solid rgba(255, 255, 255, 0.8);
+      color: #0f172a;
     }
 
     .card-header {
@@ -196,12 +619,7 @@
       margin-bottom: 12px;
     }
 
-    .brand-badge img {
-      width: 22px;
-      height: 22px;
-      object-fit: contain;
-    }
-
+    .brand-badge img { width: 22px; height: 22px; object-fit: contain; }
     .brand-badge span {
       font-size: 12.5px;
       font-weight: 700;
@@ -213,20 +631,16 @@
     .card-header h1 {
       font-size: 23px;
       font-weight: 800;
-      color: var(--text-main);
       letter-spacing: -0.6px;
     }
 
     .card-header p {
       font-size: 13.5px;
-      color: var(--text-muted);
+      color: #64748b;
       margin-top: 4px;
     }
 
-    .input-group {
-      margin-bottom: 18px;
-    }
-
+    .input-group { margin-bottom: 18px; }
     .input-group label {
       display: flex;
       justify-content: space-between;
@@ -234,18 +648,6 @@
       font-weight: 700;
       color: #334155;
       margin-bottom: 7px;
-    }
-
-    .input-group label .badge-req {
-      font-size: 11px;
-      color: #94a3b8;
-      font-weight: 500;
-    }
-
-    .input-wrapper {
-      position: relative;
-      display: flex;
-      align-items: center;
     }
 
     .input-wrapper input {
@@ -259,7 +661,7 @@
       font-weight: 600;
       color: #0f172a;
       outline: none;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.2s;
     }
 
     .input-wrapper input:focus {
@@ -282,16 +684,6 @@
       align-items: center;
       gap: 9px;
       cursor: pointer;
-      user-select: none;
-      font-weight: 500;
-    }
-
-    .remember-label input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-      accent-color: var(--primary-accent);
-      cursor: pointer;
-      border-radius: 6px;
     }
 
     .btn-submit {
@@ -304,30 +696,10 @@
       font-size: 16px;
       font-weight: 700;
       cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       box-shadow: 0 10px 24px -4px rgba(37, 99, 235, 0.45);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
+      transition: all 0.2s;
     }
 
-    .btn-submit:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 14px 28px -4px rgba(37, 99, 235, 0.55);
-    }
-
-    .btn-submit:active {
-      transform: translateY(1px);
-    }
-
-    .btn-submit:disabled {
-      opacity: 0.75;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    /* Hiệu ứng tia chạy và vạch tốc độ */
     .loading-notice {
       display: none;
       margin-top: 18px;
@@ -339,8 +711,7 @@
     }
 
     @keyframes pulseNotice {
-      0%, 100% { opacity: 0.6; transform: scale(0.99); }
-      50% { opacity: 1; transform: scale(1.01); }
+      0%, 100% { opacity: 0.6; } 50% { opacity: 1; }
     }
 
     .error-msg {
@@ -357,174 +728,37 @@
     }
 
     .shake {
-      animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+      animation: shakeCard 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
     }
 
-    @keyframes shake {
+    @keyframes shakeCard {
       10%, 90% { transform: translate3d(-3px, 0, 0); }
       20%, 80% { transform: translate3d(5px, 0, 0); }
       30%, 50%, 70% { transform: translate3d(-7px, 0, 0); }
       40%, 60% { transform: translate3d(7px, 0, 0); }
     }
 
-    /* ========================================================
-       CYBER TRANSITION SCREEN CHUYÊN NGHIỆP
-       ======================================================== */
-    #cyber-screen {
-      position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100vh;
-      background: radial-gradient(circle at center, #0f172a 0%, #030712 100%);
-      z-index: 100;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    #cyber-screen.active {
-      display: flex;
-      opacity: 1;
-    }
-
-    .cyber-portal {
-      position: relative;
-      width: 260px;
-      height: 260px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .cyber-ring {
-      position: absolute;
-      border-radius: 50%;
-      border: 2px dashed rgba(56, 189, 248, 0.35);
-      animation: spinRing 16s linear infinite;
-    }
-
-    .cyber-ring.r1 { width: 100%; height: 100%; }
-    .cyber-ring.r2 { 
-      width: 130%; height: 130%; 
-      border-style: dotted; 
-      border-color: rgba(99, 102, 241, 0.3); 
-      animation-duration: 24s; 
-      animation-direction: reverse; 
-    }
-
-    @keyframes spinRing {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-
-    .cyber-core-btn {
-      width: 150px;
-      height: 150px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #1e293b, #090e17);
-      border: 3px solid var(--neon-cyan);
-      box-shadow: 0 0 45px rgba(56, 189, 248, 0.45), inset 0 0 25px rgba(56, 189, 248, 0.35);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      z-index: 10;
-      outline: none;
-    }
-
-    .cyber-core-btn:hover {
-      box-shadow: 0 0 65px rgba(56, 189, 248, 0.8), inset 0 0 35px rgba(56, 189, 248, 0.6);
-      transform: scale(1.06);
-    }
-
-    .cyber-core-btn:active {
-      transform: scale(0.92);
-      box-shadow: 0 0 25px rgba(56, 189, 248, 0.7);
-    }
-
-    .cyber-core-btn img {
-      width: 80%;
-      height: 80%;
-      object-fit: contain;
-      pointer-events: none;
-      filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
-    }
-
-    .cyber-guide {
-      position: absolute;
-      right: -135px;
-      bottom: -35px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      pointer-events: none;
-    }
-
-    .cyber-bubble {
-      background: #ffffff;
-      color: #0f172a;
-      font-size: 13.5px;
-      font-weight: 800;
-      padding: 7px 16px;
-      border-radius: 999px;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-      white-space: nowrap;
-      margin-bottom: 6px;
-      animation: bubbleFloat 2.2s ease-in-out infinite;
-    }
-
-    @keyframes bubbleFloat {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-6px); }
-    }
-
-    .cyber-cat-pointer {
-      width: 100px;
-      height: 100px;
-      object-fit: contain;
-      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
-    }
-
-    .shockwave {
-      position: absolute;
-      border-radius: 50%;
-      border: 3.5px solid var(--neon-cyan);
-      pointer-events: none;
-      animation: explodeWave 0.75s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
-    }
-
-    @keyframes explodeWave {
-      0% { width: 150px; height: 150px; opacity: 1; }
-      100% { width: 1100px; height: 1100px; opacity: 0; border-width: 1px; }
-    }
-
-    /* ========================================================
-       ATTENDANCE DASHBOARD
-       ======================================================== */
+    /* MÀN ĐIỂM DANH */
     #attendance-screen {
       display: none;
       width: 100%;
       max-width: 620px;
-      background: var(--card-bg);
+      background: rgba(255, 255, 255, 0.96);
       border-radius: 32px;
-      box-shadow: var(--card-shadow);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
       padding: 28px 26px;
+      color: #0f172a;
       z-index: 10;
-      position: relative;
-      border: 1.5px solid var(--card-border);
     }
 
     #attendance-screen.active {
       display: block;
-      animation: screenEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      animation: screenIn 0.35s ease-out forwards;
     }
 
-    @keyframes screenEnter {
-      from { opacity: 0; transform: translateY(12px) scale(0.97); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
+    @keyframes screenIn {
+      from { opacity: 0; transform: scale(0.97); }
+      to { opacity: 1; transform: scale(1); }
     }
 
     .dash-header {
@@ -534,19 +768,6 @@
       border-bottom: 1.5px solid #f1f5f9;
       padding-bottom: 16px;
       margin-bottom: 18px;
-    }
-
-    .dash-title {
-      font-size: 19px;
-      font-weight: 800;
-      color: #0f172a;
-    }
-
-    .dash-sub {
-      font-size: 13px;
-      color: #64748b;
-      margin-top: 3px;
-      font-weight: 500;
     }
 
     .filter-grid {
@@ -559,14 +780,13 @@
     .filter-grid select, .filter-grid input {
       width: 100%;
       height: 42px;
-      padding: 0 12px;
+      padding: 0 10px;
       border-radius: 12px;
       border: 1.5px solid #cbd5e1;
       font-size: 13.5px;
       font-weight: 600;
       background: #f8fafc;
       outline: none;
-      color: #1e293b;
     }
 
     .stats-row {
@@ -579,28 +799,17 @@
     .stat-badge {
       background: #f8fafc;
       border-radius: 16px;
-      padding: 14px 10px;
+      padding: 12px 10px;
       text-align: center;
       border: 1.5px solid #e2e8f0;
-      transition: transform 0.2s;
     }
 
     .stat-badge.present { border-color: rgba(16, 185, 129, 0.35); background: #ecfdf5; color: #065f46; }
     .stat-badge.absent-kp { border-color: rgba(239, 68, 68, 0.35); background: #fef2f2; color: #991b1b; }
     .stat-badge.absent-cp { border-color: rgba(245, 158, 11, 0.35); background: #fffbeb; color: #92400e; }
 
-    .stat-num {
-      font-size: 22px;
-      font-weight: 900;
-    }
-
-    .stat-text {
-      font-size: 12px;
-      font-weight: 700;
-      margin-top: 2px;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
-    }
+    .stat-num { font-size: 22px; font-weight: 900; }
+    .stat-text { font-size: 12px; font-weight: 700; margin-top: 2px; }
 
     .search-box {
       width: 100%;
@@ -609,15 +818,9 @@
       border-radius: 14px;
       border: 1.5px solid #cbd5e1;
       font-size: 14px;
-      font-weight: 500;
       margin-bottom: 14px;
       outline: none;
       background: #f8fafc;
-    }
-
-    .search-box:focus {
-      border-color: var(--primary-accent);
-      background: #fff;
     }
 
     .student-list {
@@ -626,82 +829,29 @@
       border-radius: 16px;
       border: 1.5px solid #e2e8f0;
       margin-bottom: 20px;
-      background: #ffffff;
     }
 
     .student-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 13px 18px;
+      padding: 12px 18px;
       border-bottom: 1px solid #f1f5f9;
-      transition: background 0.15s;
-    }
-
-    .student-item:last-child {
-      border-bottom: none;
-    }
-
-    .student-item:hover {
-      background: #f8fafc;
-    }
-
-    .student-info {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .stu-name {
-      font-size: 14.5px;
-      font-weight: 700;
-      color: #0f172a;
-    }
-
-    .stu-id {
-      font-size: 12.5px;
-      color: #64748b;
-      font-weight: 500;
-      margin-top: 1px;
-    }
-
-    .attendance-actions {
-      display: flex;
-      gap: 8px;
     }
 
     .btn-att {
-      padding: 7px 13px;
+      padding: 6px 12px;
       border-radius: 10px;
       font-size: 12px;
       font-weight: 700;
       border: 1.5px solid transparent;
       cursor: pointer;
-      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .btn-att.kp {
-      background: #fee2e2;
-      color: #dc2626;
-      border-color: #fca5a5;
-    }
-
-    .btn-att.kp.active {
-      background: #dc2626;
-      color: #ffffff;
-      box-shadow: 0 4px 10px rgba(220, 38, 38, 0.35);
-    }
-
-    .btn-att.cp {
-      background: #fef3c7;
-      color: #d97706;
-      border-color: #fcd34d;
-    }
-
-    .btn-att.cp.active {
-      background: #d97706;
-      color: #ffffff;
-      box-shadow: 0 4px 10px rgba(217, 119, 6, 0.35);
-    }
+    .btn-att.kp { background: #fee2e2; color: #dc2626; }
+    .btn-att.kp.active { background: #dc2626; color: #fff; }
+    .btn-att.cp { background: #fef3c7; color: #d97706; }
+    .btn-att.cp.active { background: #d97706; color: #fff; }
 
     .bottom-bar {
       display: flex;
@@ -721,12 +871,6 @@
       font-weight: 700;
       border: none;
       cursor: pointer;
-      transition: all 0.15s;
-    }
-
-    .btn-secondary:hover {
-      background: #e2e8f0;
-      color: #1e293b;
     }
 
     .btn-primary-action {
@@ -739,222 +883,409 @@
       font-weight: 800;
       border: none;
       cursor: pointer;
-      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
-      transition: all 0.2s;
-    }
-
-    .btn-primary-action:hover {
-      transform: translateY(-1.5px);
-      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.45);
     }
   </style>
 </head>
 <body>
 
-  <!-- ==================== MÀN ĐĂNG NHẬP & MASCOT ==================== -->
-  <div class="container" id="login-container">
-    
-    <!-- KHUNG MASCOT ĐA TẦNG CÂN CHỈNH PIXEL HOÀN HẢO -->
-    <div class="mascot-stage" id="mascot-stage">
-      <div class="mascot-inner" id="mascot-inner">
-        <!-- Lớp nền mắt trống (chuẩn 1024x1024) -->
-        <img src="assets/cat-chinh-dien-khong-mat-transparent.png" id="layer-noeyes" class="sprite-layer active" alt="Mascot Base">
-        
-        <!-- Đôi tròng mắt anime nhìn theo mượt 60fps -->
-        <div class="eye-layer-container" id="eye-container">
-          <div class="eye-socket left">
-            <img src="assets/cat-trong-den-anime.png" class="iris-pupil" id="iris-left" alt="Left Iris">
-          </div>
-          <div class="eye-socket right">
-            <img src="assets/cat-trong-den-anime.png" class="iris-pupil" id="iris-right" alt="Right Iris">
-          </div>
-        </div>
+  <!-- ==================== MÀN HÌNH 1: INTRO SCI-FI BOOT ==================== -->
+  <div id="intro-screen">
+    <div class="intro-grid"></div>
+    <canvas id="sparks-canvas"></canvas>
 
-        <!-- Các tư thế sprite phụ cross-fade mượt mà -->
-        <img src="assets/cat-chinh-dien-nham-mat-transparent.png" id="layer-closed" class="sprite-layer" alt="Blink">
-        <img src="assets/cat-binh-thuong-transparent.png" id="layer-open" class="sprite-layer" alt="Normal">
-        <img src="assets/cat-chuan-bi-chay-transparent.png" id="layer-run1" class="sprite-layer" alt="Run 1">
-        <img src="assets/cat-chay-di-transparent.png" id="layer-run2" class="sprite-layer" alt="Run 2">
-        <img src="assets/cat-vui-ve-transparent.png" id="layer-cheer" class="sprite-layer" alt="Cheer">
-        <img src="assets/cat-chi-tay-logo-transparent.png" id="layer-point" class="sprite-layer" alt="Point">
-        <img src="assets/cat-nghieng-dau-transparent.png" id="layer-tilt" class="sprite-layer" alt="Look up">
-        <img src="assets/cat-quay-lai-transparent.png" id="layer-wave" class="sprite-layer" alt="Wave">
+    <!-- 4 GÓC MÀN HÌNH -->
+    <!-- Góc trái trên: Logo SIU + Vòng tia lửa -->
+    <div class="hud-corner corner-tl" id="corner-tl">
+      <div class="siu-logo-orbit">
+        <svg viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="45" pathLength="100" class="circle-draw" />
+          <circle cx="50" cy="50" r="48" class="spark-ring" id="spark-ring" />
+        </svg>
+        <img src="assets/logo.png" class="logo-img" alt="SIU Logo">
       </div>
     </div>
 
-    <!-- KHUNG ĐĂNG NHẬP THIẾT KẾ HIỆN ĐẠI -->
-    <div class="card" id="login-card">
-      <div class="card-header">
-        <div class="brand-badge">
-          <img src="assets/logo.png" alt="SIU">
-          <span>Saigon International University</span>
-        </div>
-        <h1>Điểm Danh Lớp Học</h1>
-        <p>Nhập mã học phần để vào danh sách</p>
-      </div>
-
-      <form id="login-form" onsubmit="handleLogin(event)">
-        <div class="input-group">
-          <label for="class-code">
-            <span>Mã lớp học phần</span>
-            <span class="badge-req">Bắt buộc</span>
-          </label>
-          <div class="input-wrapper">
-            <input type="text" id="class-code" placeholder="VD: 241_71ITEC20203_01" required autocomplete="off">
-          </div>
-        </div>
-
-        <div class="input-group">
-          <label for="pin-code">
-            <span>Mã PIN (6 số)</span>
-            <span class="badge-req">Bắt buộc</span>
-          </label>
-          <div class="input-wrapper">
-            <input type="password" id="pin-code" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="••••••" required>
-          </div>
-        </div>
-
-        <div class="remember-row">
-          <label class="remember-label">
-            <input type="checkbox" id="remember-me">
-            <span>Ghi nhớ mã lớp trên máy này</span>
-          </label>
-        </div>
-
-        <button type="submit" class="btn-submit" id="btn-login">
-          <span>Vào lớp</span>
-        </button>
-
-        <div class="loading-notice" id="loading-notice">
-          🐾 Đang tìm lớp, vui lòng chờ trong giây lát...
-        </div>
-
-        <div class="error-msg" id="error-msg"></div>
-      </form>
-    </div>
-  </div>
-
-  <!-- ==================== MÀN CHUYỂN CẢNH CYBER ==================== -->
-  <div id="cyber-screen">
-    <div class="cyber-portal">
-      <div class="cyber-ring r1"></div>
-      <div class="cyber-ring r2"></div>
-      <button class="cyber-core-btn" id="cyber-core-btn" onclick="triggerCyberLaunch()">
-        <img src="assets/logo.png" alt="Portal Button">
-      </button>
-
-      <div class="cyber-guide">
-        <div class="cyber-bubble">Nhấn vào nè!</div>
-        <img src="assets/cat-chi-tay-logo-transparent.png" class="cyber-cat-pointer" alt="Point Mascot">
+    <!-- Góc phải trên: Cờ Việt Nam -->
+    <div class="hud-corner corner-tr" id="corner-tr">
+      <div class="flag-vn">
+        <svg viewBox="0 0 100 100">
+          <!-- Ngôi sao vàng 5 cánh chuẩn hình học -->
+          <polygon points="50,15 61.7,43.3 92.4,43.3 67.5,61.4 77.1,89.7 50,72.2 22.9,89.7 32.5,61.4 7.6,43.3 38.3,43.3" />
+        </svg>
       </div>
     </div>
-  </div>
 
-  <!-- ==================== MÀN ĐIỂM DANH HOÀN CHỈNH ==================== -->
-  <div id="attendance-screen">
-    <div class="dash-header">
+    <!-- Góc trái dưới: Logo Quốc tế Globe Sci-Fi -->
+    <div class="hud-corner corner-bl" id="corner-bl">
+      <div class="globe-icon"></div>
       <div>
-        <div class="dash-title" id="dash-class-name">Lớp: 241_71ITEC20203_01</div>
-        <div class="dash-sub">Sĩ số: <span id="dash-total">8</span> sinh viên</div>
-      </div>
-      <button class="btn-secondary" onclick="logout()">Đổi lớp</button>
-    </div>
-
-    <!-- Hàng lọc -->
-    <div class="filter-grid">
-      <select id="select-session">
-        <option>Buổi 1</option>
-        <option>Buổi 2</option>
-        <option>Buổi 3</option>
-        <option selected>Buổi 4</option>
-        <option>Buổi 5</option>
-      </select>
-      <select id="select-status">
-        <option value="normal">Có học</option>
-        <option value="off">Giảng viên nghỉ</option>
-      </select>
-      <input type="date" id="select-date">
-    </div>
-
-    <!-- 3 Ô thống kê -->
-    <div class="stats-row">
-      <div class="stat-badge present">
-        <div class="stat-num" id="stat-present">8</div>
-        <div class="stat-text">Có mặt</div>
-      </div>
-      <div class="stat-badge absent-kp">
-        <div class="stat-num" id="stat-kp">0</div>
-        <div class="stat-text">Không phép</div>
-      </div>
-      <div class="stat-badge absent-cp">
-        <div class="stat-num" id="stat-cp">0</div>
-        <div class="stat-text">Có phép</div>
+        <div class="global-text">GLOBAL</div>
+        <div style="font-size: 9px; color: #475569; letter-spacing: 1px;">EDUCATION</div>
       </div>
     </div>
 
-    <!-- Ô tìm kiếm sinh viên -->
-    <input type="text" class="search-box" id="search-student" placeholder="🔍 Tìm theo MSSV hoặc họ tên..." oninput="filterStudents()">
-
-    <!-- Danh sách điểm danh sinh viên -->
-    <div class="student-list" id="student-list-container">
-      <!-- Render sinh viên động -->
+    <!-- Góc phải dưới: ASEAN NATIONAL CEO -->
+    <div class="hud-corner corner-br" id="corner-br">
+      <div class="asean-title">ASEAN</div>
+      <div class="asean-sub">NATIONAL CEO</div>
     </div>
 
-    <!-- Thanh thao tác dưới -->
-    <div class="bottom-bar">
-      <button class="btn-secondary" onclick="resetAllAbsent()">Bỏ chọn tất cả</button>
-      <button class="btn-secondary" onclick="reportWrongList()">Báo sai danh sách</button>
-      <button class="btn-primary-action" onclick="submitAttendance()">Gửi điểm danh</button>
+    <!-- KHU VỰC TRUNG TÂM: CHIP + 3 TAM GIÁC + DÂY MẠCH -->
+    <div class="center-stage">
+      <!-- 4 Dây SVG dẫn tới 4 góc -->
+      <svg id="wires-svg" viewBox="0 0 3000 3000">
+        <!-- Dây 1: Ra góc trên trái -->
+        <path id="wire-tl" class="conduit-wire" pathLength="100" d="M 1500 1500 Q 1200 1100 200 200" />
+        <!-- Dây 2: Ra góc trên phải -->
+        <path id="wire-tr" class="conduit-wire" pathLength="100" d="M 1500 1500 Q 1800 1100 2800 200" />
+        <!-- Dây 3: Xuống chữ Việt Nam & góc dưới trái -->
+        <path id="wire-bl" class="conduit-wire" pathLength="100" d="M 1500 1500 Q 1400 2000 300 2800" />
+        <!-- Dây 4: Ra góc dưới phải -->
+        <path id="wire-br" class="conduit-wire" pathLength="100" d="M 1500 1500 Q 1700 2100 2700 2800" />
+      </svg>
+
+      <!-- 3 Tam giác robot mecha -->
+      <div class="tri-armor tri-top" id="tri-top" onclick="triggerTri(this)">
+        <svg viewBox="0 0 100 100"><polygon points="50,10 90,85 10,85" /></svg>
+      </div>
+      <div class="tri-armor tri-bl" id="tri-bl" onclick="triggerTri(this)">
+        <svg viewBox="0 0 100 100"><polygon points="50,10 90,85 10,85" /></svg>
+      </div>
+      <div class="tri-armor tri-br" id="tri-br" onclick="triggerTri(this)">
+        <svg viewBox="0 0 100 100"><polygon points="50,10 90,85 10,85" /></svg>
+      </div>
+
+      <!-- Chip trung tâm -->
+      <div class="core-chip" id="core-chip" onclick="triggerCoreChip()">
+        <img src="assets/logo.png" class="chip-inner-logo" alt="Chip Core">
+      </div>
+    </div>
+
+    <!-- DƯỚI CHIP: CHỮ "VIỆT NAM" LOANG VẾT SƠN NĂNG LƯỢNG -->
+    <div class="vn-title-wrapper" id="vn-title-wrapper">
+      <div class="vn-text vn-dim">VIỆT NAM</div>
+      <div class="vn-text vn-colored" id="vn-colored">VIỆT NAM</div>
+    </div>
+
+    <!-- Nút Vào Trang Chính & Bỏ Qua -->
+    <button class="btn-enter-main" id="btn-enter-main" onclick="goToMainApp()">
+      VÀO TRANG CHÍNH ➔
+    </button>
+    <button class="btn-skip" id="btn-skip" onclick="skipToFinalFrame()">BỎ QUA INTRO</button>
+  </div>
+
+
+  <!-- ==================== MÀN HÌNH 2: WEB APP CHÍNH (MASCOT + FORM) ==================== -->
+  <div id="main-app">
+    <div class="container" id="login-container">
+      
+      <!-- KHUNG MASCOT ĐA TẦNG CÂN CHỈNH PIXEL HOÀN HẢO -->
+      <div class="mascot-stage" id="mascot-stage">
+        <div class="mascot-inner" id="mascot-inner">
+          <img src="assets/cat-chinh-dien-khong-mat-transparent.png" id="layer-noeyes" class="sprite-layer active" alt="Mascot Base">
+          
+          <div class="eye-layer-container" id="eye-container">
+            <div class="eye-socket left">
+              <img src="assets/cat-trong-den-anime.png" class="iris-pupil" id="iris-left" alt="Left Iris">
+            </div>
+            <div class="eye-socket right">
+              <img src="assets/cat-trong-den-anime.png" class="iris-pupil" id="iris-right" alt="Right Iris">
+            </div>
+          </div>
+
+          <img src="assets/cat-chinh-dien-nham-mat-transparent.png" id="layer-closed" class="sprite-layer" alt="Blink">
+          <img src="assets/cat-binh-thuong-transparent.png" id="layer-open" class="sprite-layer" alt="Normal">
+          <img src="assets/cat-chuan-bi-chay-transparent.png" id="layer-run1" class="sprite-layer" alt="Run 1">
+          <img src="assets/cat-chay-di-transparent.png" id="layer-run2" class="sprite-layer" alt="Run 2">
+          <img src="assets/cat-vui-ve-transparent.png" id="layer-cheer" class="sprite-layer" alt="Cheer">
+          <img src="assets/cat-chi-tay-logo-transparent.png" id="layer-point" class="sprite-layer" alt="Point">
+          <img src="assets/cat-nghieng-dau-transparent.png" id="layer-tilt" class="sprite-layer" alt="Look up">
+          <img src="assets/cat-quay-lai-transparent.png" id="layer-wave" class="sprite-layer" alt="Wave">
+        </div>
+      </div>
+
+      <!-- KHUNG ĐĂNG NHẬP THIẾT KẾ HIỆN ĐẠI -->
+      <div class="card" id="login-card">
+        <div class="card-header">
+          <div class="brand-badge">
+            <img src="assets/logo.png" alt="SIU">
+            <span>Saigon International University</span>
+          </div>
+          <h1>Điểm Danh Lớp Học</h1>
+          <p>Nhập mã học phần để vào danh sách</p>
+        </div>
+
+        <form id="login-form" onsubmit="handleLogin(event)">
+          <div class="input-group">
+            <label for="class-code">Mã lớp học phần</label>
+            <div class="input-wrapper">
+              <input type="text" id="class-code" placeholder="VD: 241_71ITEC20203_01" required autocomplete="off">
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label for="pin-code">Mã PIN (6 số)</label>
+            <div class="input-wrapper">
+              <input type="password" id="pin-code" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="••••••" required>
+            </div>
+          </div>
+
+          <div class="remember-row">
+            <label class="remember-label">
+              <input type="checkbox" id="remember-me">
+              <span>Ghi nhớ mã lớp trên máy này</span>
+            </label>
+          </div>
+
+          <button type="submit" class="btn-submit" id="btn-login">Vào lớp</button>
+          <div class="loading-notice" id="loading-notice">🐾 Đang tìm lớp, vui lòng chờ trong giây lát...</div>
+          <div class="error-msg" id="error-msg"></div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MÀN ĐIỂM DANH -->
+    <div id="attendance-screen">
+      <div class="dash-header">
+        <div>
+          <div class="dash-title" id="dash-class-name" style="font-size: 19px; font-weight: 800;">Lớp: 241_71ITEC20203_01</div>
+          <div style="font-size: 13px; color: #64748b; margin-top: 3px;">Sĩ số: <span id="dash-total">8</span> sinh viên</div>
+        </div>
+        <button class="btn-secondary" onclick="logout()">Đổi lớp</button>
+      </div>
+
+      <div class="filter-grid">
+        <select id="select-session"><option>Buổi 1</option><option>Buổi 2</option><option>Buổi 3</option><option selected>Buổi 4</option></select>
+        <select id="select-status"><option value="normal">Có học</option><option value="off">Giảng viên nghỉ</option></select>
+        <input type="date" id="select-date">
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-badge present"><div class="stat-num" id="stat-present">8</div><div class="stat-text">Có mặt</div></div>
+        <div class="stat-badge absent-kp"><div class="stat-num" id="stat-kp">0</div><div class="stat-text">Không phép</div></div>
+        <div class="stat-badge absent-cp"><div class="stat-num" id="stat-cp">0</div><div class="stat-text">Có phép</div></div>
+      </div>
+
+      <input type="text" class="search-box" id="search-student" placeholder="🔍 Tìm theo MSSV hoặc họ tên..." oninput="filterStudents()">
+      <div class="student-list" id="student-list-container"></div>
+
+      <div class="bottom-bar">
+        <button class="btn-secondary" onclick="resetAllAbsent()">Bỏ chọn tất cả</button>
+        <button class="btn-secondary" onclick="reportWrongList()">Báo sai</button>
+        <button class="btn-primary-action" onclick="submitAttendance()">Gửi điểm danh</button>
+      </div>
     </div>
   </div>
 
-  <script>
-    /* ==========================================================================
-       1. CẤU HÌNH API BACKEND CHO GOOGLE APPS SCRIPT
-       ========================================================================== */
-    const isGAS = typeof google !== 'undefined' && google.script && google.script.run;
 
+  <!-- ==================== JAVASCRIPT ĐIỀU KHIỂN ĐỒNG BỘ 60FPS ==================== -->
+  <script>
+    /* ========================================================
+       PHẦN 1: SEQUENCE ANIMATION INTRO SCI-FI (THEO ĐÚNG ĐẶC TẢ)
+       ======================================================== */
+    const canvas = document.getElementById('sparks-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Hạt tia lửa điện hạt Plasma bùng nổ khi ấn chip
+    class Spark {
+      constructor(x, y, angle, speed, color) {
+        this.x = x;
+        this.y = y;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        this.color = color;
+        this.alpha = 1;
+        this.decay = Math.random() * 0.03 + 0.02;
+        this.length = Math.random() * 14 + 8;
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.alpha -= this.decay;
+      }
+      draw(ctx) {
+        if (this.alpha <= 0) return;
+        ctx.save();
+        ctx.globalAlpha = this.alpha;
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 2;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = this.color;
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(this.x - this.vx * (this.length / 5), this.y - this.vy * (this.length / 5));
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    function spawnPlasmaShockwave(cx, cy) {
+      for (let i = 0; i < 36; i++) {
+        const angle = (Math.PI * 2 / 36) * i + (Math.random() - 0.5) * 0.2;
+        const speed = Math.random() * 7 + 4;
+        const color = Math.random() > 0.3 ? '#00f3ff' : '#ffffff';
+        particles.push(new Spark(cx, cy, angle, speed, color));
+      }
+    }
+
+    function renderSparksLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let i = particles.length - 1; i >= 0; i--) {
+        particles[i].update();
+        particles[i].draw(ctx);
+        if (particles[i].alpha <= 0) particles.splice(i, 1);
+      }
+      requestAnimationFrame(renderSparksLoop);
+    }
+    requestAnimationFrame(renderSparksLoop);
+
+    // QUẢN LÝ DÒNG THỜI GIAN TIMELINE
+    const introTimers = [];
+    function schedule(fn, delay) {
+      const t = setTimeout(fn, delay);
+      introTimers.push(t);
+      return t;
+    }
+
+    const cornerTL = document.getElementById('corner-tl');
+    const cornerTR = document.getElementById('corner-tr');
+    const cornerBL = document.getElementById('corner-bl');
+    const cornerBR = document.getElementById('corner-br');
+    const sparkRing = document.getElementById('spark-ring');
+    const triTop = document.getElementById('tri-top');
+    const triBL = document.getElementById('tri-bl');
+    const triBR = document.getElementById('tri-br');
+    const coreChip = document.getElementById('core-chip');
+    const vnColored = document.getElementById('vn-colored');
+    const btnEnter = document.getElementById('btn-enter-main');
+    const btnSkip = document.getElementById('btn-skip');
+
+    // Khởi chạy trình tự
+    function runIntroTimeline() {
+      // 1.0s: Nút bỏ qua hiện nhẹ
+      schedule(() => btnSkip.classList.add('active'), 1000);
+
+      // 4.1: Logo SIU (0.5s - 2.5s)
+      schedule(() => cornerTL.classList.add('active'), 500);
+
+      // 4.2: Tia lửa điện xoay liên tục (2.5s)
+      schedule(() => sparkRing.classList.add('spinning'), 2500);
+
+      // 4.3: Ba tam giác robot ấn vào lần lượt (3.0s - 4.2s)
+      schedule(() => pulseTri(triTop), 3000);
+      schedule(() => pulseTri(triBL), 3400);
+      schedule(() => pulseTri(triBR), 3800);
+
+      // 4.4: Chip ấn vào & nổ tia lửa (4.2s - 4.8s)
+      schedule(() => pulseChip(), 4200);
+
+      // 4.5: Dây chính lan tới 4 góc (4.8s - 6.5s)
+      schedule(() => {
+        document.getElementById('wire-tl').classList.add('active');
+        document.getElementById('wire-tr').classList.add('active');
+        document.getElementById('wire-bl').classList.add('active');
+        document.getElementById('wire-br').classList.add('active');
+      }, 4800);
+
+      // 4.6: Chữ VIỆT NAM loang vết sơn năng lượng (6.5s - 8.3s)
+      schedule(() => vnColored.classList.add('spread'), 6500);
+
+      // 4.7: Hoàn thiện các góc & Nút Vào trang chính (7.5s - 9.0s)
+      schedule(() => cornerTR.classList.add('active'), 7500);
+      schedule(() => cornerBL.classList.add('active'), 7800);
+      schedule(() => cornerBR.classList.add('active'), 8100);
+      schedule(() => btnEnter.classList.add('active'), 8800);
+    }
+    runIntroTimeline();
+
+    function pulseTri(el) {
+      el.classList.add('lit', 'pressed');
+      setTimeout(() => el.classList.remove('pressed'), 160);
+    }
+
+    function pulseChip() {
+      coreChip.classList.add('pressed');
+      const rect = coreChip.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      spawnPlasmaShockwave(cx, cy);
+
+      setTimeout(() => coreChip.classList.remove('pressed'), 180);
+    }
+
+    // Tùy chọn bấm tay
+    function triggerTri(el) { pulseTri(el); }
+    function triggerCoreChip() { pulseChip(); }
+
+    // Nhảy tới khung hình cuối ngay tức thì
+    function skipToFinalFrame() {
+      introTimers.forEach(clearTimeout);
+      cornerTL.classList.add('active');
+      sparkRing.classList.add('spinning');
+      triTop.classList.add('lit');
+      triBL.classList.add('lit');
+      triBR.classList.add('lit');
+      document.querySelectorAll('.conduit-wire').forEach(w => w.classList.add('active'));
+      vnColored.classList.add('spread');
+      cornerTR.classList.add('active');
+      cornerBL.classList.add('active');
+      cornerBR.classList.add('active');
+      btnEnter.classList.add('active');
+      btnSkip.style.display = 'none';
+    }
+
+    // Chuyển sang Web App chính
+    function goToMainApp() {
+      const intro = document.getElementById('intro-screen');
+      intro.classList.add('finished');
+      setTimeout(() => {
+        intro.style.display = 'none';
+        const app = document.getElementById('main-app');
+        app.classList.add('active');
+      }, 600);
+    }
+
+
+    /* ========================================================
+       PHẦN 2: MASCOT LINH HOẠT 60FPS & ĐIỂM DANH
+       ======================================================== */
+    const isGAS = typeof google !== 'undefined' && google.script && google.script.run;
     function callGAS(funcName, ...args) {
       return new Promise((resolve, reject) => {
         if (!isGAS) {
-          // Mock data khi chạy trực tiếp ngoài trình duyệt
           setTimeout(() => {
             if (funcName === 'apiLogin') {
               const [cls, pin] = args;
-              if (pin === '000000') {
-                reject(new Error('Mã PIN không chính xác (mẫu test lỗi)!'));
-              } else {
-                resolve({
-                  ok: true,
-                  cls: cls || '241_71ITEC20203_01',
-                  students: [
-                    { mssv: '21010001', name: 'Nguyễn Văn An' },
-                    { mssv: '21010002', name: 'Trần Thị Bích' },
-                    { mssv: '21010003', name: 'Lê Hoàng Cường' },
-                    { mssv: '21010004', name: 'Phạm Đức Duy' },
-                    { mssv: '21010005', name: 'Vũ Ngọc Hân' },
-                    { mssv: '21010006', name: 'Đặng Minh Khôi' },
-                    { mssv: '21010007', name: 'Bùi Gia Linh' },
-                    { mssv: '21010008', name: 'Hoàng Nhật Nam' }
-                  ]
-                });
-              }
-            } else {
-              resolve({ ok: true });
-            }
-          }, 1100);
+              if (pin === '000000') reject(new Error('Mã PIN không đúng!'));
+              else resolve({
+                ok: true, cls: cls || '241_71ITEC20203_01',
+                students: [
+                  { mssv: '21010001', name: 'Nguyễn Văn An' },
+                  { mssv: '21010002', name: 'Trần Thị Bích' },
+                  { mssv: '21010003', name: 'Lê Hoàng Cường' },
+                  { mssv: '21010004', name: 'Phạm Đức Duy' },
+                  { mssv: '21010005', name: 'Vũ Ngọc Hân' },
+                  { mssv: '21010006', name: 'Đặng Minh Khôi' },
+                  { mssv: '21010007', name: 'Bùi Gia Linh' },
+                  { mssv: '21010008', name: 'Hoàng Nhật Nam' }
+                ]
+              });
+            } else resolve({ ok: true });
+          }, 1000);
           return;
         }
-
-        google.script.run
-          .withSuccessHandler(resolve)
-          .withFailureHandler(reject)[funcName](...args);
+        google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)[funcName](...args);
       });
     }
 
-    /* ==========================================================================
-       2. HỆ THỐNG ANIMATION MÈO CHUẨN XÁC 60FPS (SPRING & LERP PHYSICS)
-       ========================================================================== */
     const mascotStage = document.getElementById('mascot-stage');
     const mascotInner = document.getElementById('mascot-inner');
     const eyeContainer = document.getElementById('eye-container');
@@ -973,41 +1304,21 @@
       wave: document.getElementById('layer-wave')
     };
 
-    // Vị trí mục tiêu và hiện tại cho LERP
-    let targetEyeX = 0, targetEyeY = 0;
-    let currentEyeX = 0, currentEyeY = 0;
+    let targetEyeX = 0, targetEyeY = 0, currentEyeX = 0, currentEyeY = 0;
     let targetHeadTilt = 0, currentHeadTilt = 0;
+    const MAX_OFFSET_X = 6.5, MAX_OFFSET_Y = 5.0, LERP_FACTOR = 0.15;
+    let isTyping = false, isRunning = false, currentActiveLayer = 'noeyes';
 
-    // Giới hạn an toàn di chuyển tròng mắt trong hốc tròn (±6px ở stage 250px)
-    const MAX_OFFSET_X = 6.5;
-    const MAX_OFFSET_Y = 5.0;
-    const LERP_FACTOR = 0.15;
-
-    let isTyping = false;
-    let isRunning = false;
-    let currentActiveLayer = 'noeyes';
-
-    // Đổi tư thế có cross-fade mượt mà bằng opacity
     function setPose(layerKey) {
       if (currentActiveLayer === layerKey) return;
-      
-      if (layerKey === 'noeyes') {
-        eyeContainer.style.opacity = '1';
-      } else {
-        eyeContainer.style.opacity = '0';
-      }
-
-      Object.keys(layers).forEach(k => {
-        if (layers[k]) layers[k].classList.remove('active');
-      });
-
+      eyeContainer.style.opacity = (layerKey === 'noeyes') ? '1' : '0';
+      Object.keys(layers).forEach(k => { if (layers[k]) layers[k].classList.remove('active'); });
       if (layers[layerKey]) {
         layers[layerKey].classList.add('active');
         currentActiveLayer = layerKey;
       }
     }
 
-    // VÒNG LẶP NỘI SUY 60FPS
     function renderMascotFrame() {
       currentEyeX += (targetEyeX - currentEyeX) * LERP_FACTOR;
       currentEyeY += (targetEyeY - currentEyeY) * LERP_FACTOR;
@@ -1016,17 +1327,14 @@
       const eyeTransform = `translate3d(${currentEyeX.toFixed(2)}px, ${currentEyeY.toFixed(2)}px, 0)`;
       irisLeft.style.transform = eyeTransform;
       irisRight.style.transform = eyeTransform;
-
       mascotInner.style.transform = `rotate(${currentHeadTilt.toFixed(2)}deg)`;
 
       requestAnimationFrame(renderMascotFrame);
     }
     requestAnimationFrame(renderMascotFrame);
 
-    // BÁM THEO CHUỘT KHI KHÔNG GÕ PHÍM
     window.addEventListener('mousemove', (e) => {
       if (isTyping || isRunning) return;
-
       const rect = mascotStage.getBoundingClientRect();
       const mascotCenterX = rect.left + rect.width / 2;
       const mascotCenterY = rect.top + rect.height * 0.42;
@@ -1043,14 +1351,12 @@
       }
     });
 
-    // CHỚP MẮT TỰ NHIÊN (3 - 5 GIÂY)
     function scheduleBlink() {
       const interval = Math.random() * 2000 + 3000;
       setTimeout(() => {
         if (!isRunning && currentActiveLayer === 'noeyes') {
           layers.closed.classList.add('active');
           eyeContainer.style.opacity = '0';
-
           setTimeout(() => {
             layers.closed.classList.remove('active');
             eyeContainer.style.opacity = '1';
@@ -1063,18 +1369,15 @@
     }
     scheduleBlink();
 
-    // MẮT BÁM THEO VỊ TRÍ CON TRỎ GÕ PHÍM (CARET)
     function trackInputCaret(input) {
       if (isRunning) return;
       isTyping = true;
-
       const rect = input.getBoundingClientRect();
       const mascotRect = mascotStage.getBoundingClientRect();
       const mascotCenterX = mascotRect.left + mascotRect.width / 2;
       const mascotCenterY = mascotRect.top + mascotRect.height * 0.42;
 
-      const charWidth = 9.5;
-      const caretX = rect.left + Math.min(input.selectionStart * charWidth, rect.width - 24) + 16;
+      const caretX = rect.left + Math.min(input.selectionStart * 9.5, rect.width - 24) + 16;
       const caretY = rect.top + rect.height / 2;
 
       const dx = caretX - mascotCenterX;
@@ -1086,45 +1389,32 @@
       targetHeadTilt = (dx / 400) * 2.5;
 
       clearTimeout(input._typingTimer);
-      input._typingTimer = setTimeout(() => {
-        isTyping = false;
-      }, 1200);
+      input._typingTimer = setTimeout(() => { isTyping = false; }, 1200);
     }
 
     const classInput = document.getElementById('class-code');
     const pinInput = document.getElementById('pin-code');
-
     [classInput, pinInput].forEach(inp => {
       inp.addEventListener('input', () => trackInputCaret(inp));
       inp.addEventListener('focus', () => trackInputCaret(inp));
-      inp.addEventListener('blur', () => {
-        setTimeout(() => { isTyping = false; }, 200);
-      });
+      inp.addEventListener('blur', () => { setTimeout(() => { isTyping = false; }, 200); });
     });
 
-    // GHI NHỚ MÃ LỚP
     const savedClass = localStorage.getItem('siu_class_code');
     if (savedClass) {
       classInput.value = savedClass;
       document.getElementById('remember-me').checked = true;
     }
 
-    /* ==========================================================================
-       3. XỬ LÝ ĐĂNG NHẬP, LOADING BƯỚC CHẠY VÀ CYBER LAUNCH
-       ========================================================================== */
     let runInterval = null;
-
     async function handleLogin(e) {
       e.preventDefault();
       const cls = classInput.value.trim();
       const pin = pinInput.value.trim();
       const remember = document.getElementById('remember-me').checked;
 
-      if (remember) {
-        localStorage.setItem('siu_class_code', cls);
-      } else {
-        localStorage.removeItem('siu_class_code');
-      }
+      if (remember) localStorage.setItem('siu_class_code', cls);
+      else localStorage.removeItem('siu_class_code');
 
       const btn = document.getElementById('btn-login');
       const notice = document.getElementById('loading-notice');
@@ -1133,7 +1423,6 @@
       btn.disabled = true;
       notice.style.display = 'block';
 
-      // Mèo chạy luân phiên 2 bước chân
       isRunning = true;
       let step = 0;
       setPose('run1');
@@ -1147,16 +1436,13 @@
         clearInterval(runInterval);
         isRunning = false;
 
-        // Thành công: Squash & Stretch nảy nhẹ và đổi sang vui vẻ
         mascotStage.classList.add('mascot-squash');
         setPose('cheer');
         setTimeout(() => mascotStage.classList.remove('mascot-squash'), 220);
 
         setTimeout(() => {
           document.getElementById('login-container').style.display = 'none';
-          const cyberScreen = document.getElementById('cyber-screen');
-          cyberScreen.classList.add('active');
-          window.sessionData = res;
+          initAttendanceDashboard(res);
         }, 550);
 
       } catch (err) {
@@ -1165,7 +1451,6 @@
         btn.disabled = false;
         notice.style.display = 'none';
 
-        // Lỗi: Nghiêng đầu bối rối và rung card
         setPose('tilt');
         const card = document.getElementById('login-card');
         card.classList.add('shake');
@@ -1179,44 +1464,14 @@
       }
     }
 
-    // CHUYỂN CẢNH CYBER
-    function triggerCyberLaunch() {
-      const btn = document.getElementById('cyber-core-btn');
-      
-      const shock = document.createElement('div');
-      shock.className = 'shockwave';
-      btn.parentElement.appendChild(shock);
-
-      btn.style.transform = 'scale(0.88)';
-      
-      setTimeout(() => {
-        btn.style.transform = 'scale(1.1)';
-        const cyberScreen = document.getElementById('cyber-screen');
-        cyberScreen.style.opacity = '0';
-
-        setTimeout(() => {
-          cyberScreen.classList.remove('active');
-          initAttendanceDashboard(window.sessionData);
-        }, 400);
-      }, 250);
-    }
-
-    /* ==========================================================================
-       4. TRANG ĐIỂM DANH SINH VIÊN
-       ========================================================================== */
-    let studentData = [];
-    let attendanceMap = {};
-
+    let studentData = [], attendanceMap = {};
     function initAttendanceDashboard(data) {
       const screen = document.getElementById('attendance-screen');
       screen.classList.add('active');
-
       document.getElementById('select-date').valueAsDate = new Date();
       document.getElementById('dash-class-name').textContent = `Lớp: ${data.cls}`;
-      
       studentData = data.students || [];
       document.getElementById('dash-total').textContent = studentData.length;
-      
       renderStudentList(studentData);
       updateStats();
     }
@@ -1224,18 +1479,16 @@
     function renderStudentList(list) {
       const container = document.getElementById('student-list-container');
       container.innerHTML = '';
-
       list.forEach(stu => {
         const item = document.createElement('div');
         item.className = 'student-item';
         const currentStatus = attendanceMap[stu.mssv] || '';
-
         item.innerHTML = `
           <div class="student-info">
-            <span class="stu-name">${stu.name}</span>
-            <span class="stu-id">${stu.mssv}</span>
+            <span style="font-size: 14.5px; font-weight: 700; color: #0f172a;">${stu.name}</span>
+            <span style="font-size: 12.5px; color: #64748b; font-weight: 500;">${stu.mssv}</span>
           </div>
-          <div class="attendance-actions">
+          <div style="display: flex; gap: 8px;">
             <button class="btn-att kp ${currentStatus === 'KP' ? 'active' : ''}" onclick="toggleStatus('${stu.mssv}', 'KP')">Không phép</button>
             <button class="btn-att cp ${currentStatus === 'CP' ? 'active' : ''}" onclick="toggleStatus('${stu.mssv}', 'CP')">Có phép</button>
           </div>
@@ -1245,26 +1498,19 @@
     }
 
     function toggleStatus(mssv, type) {
-      if (attendanceMap[mssv] === type) {
-        delete attendanceMap[mssv];
-      } else {
-        attendanceMap[mssv] = type;
-      }
+      if (attendanceMap[mssv] === type) delete attendanceMap[mssv];
+      else attendanceMap[mssv] = type;
       filterStudents();
       updateStats();
     }
 
     function updateStats() {
-      let kp = 0;
-      let cp = 0;
+      let kp = 0, cp = 0;
       Object.values(attendanceMap).forEach(v => {
         if (v === 'KP') kp++;
         if (v === 'CP') cp++;
       });
-
-      const total = studentData.length;
-      const present = total - (kp + cp);
-
+      const present = studentData.length - (kp + cp);
       document.getElementById('stat-present').textContent = present;
       document.getElementById('stat-kp').textContent = kp;
       document.getElementById('stat-cp').textContent = cp;
@@ -1272,9 +1518,7 @@
 
     function filterStudents() {
       const q = document.getElementById('search-student').value.toLowerCase().trim();
-      const filtered = studentData.filter(s => 
-        s.name.toLowerCase().includes(q) || s.mssv.includes(q)
-      );
+      const filtered = studentData.filter(s => s.name.toLowerCase().includes(q) || s.mssv.includes(q));
       renderStudentList(filtered);
     }
 
@@ -1286,19 +1530,11 @@
 
     function reportWrongList() {
       const note = prompt('Nhập phản ánh hoặc lỗi danh sách lớp:');
-      if (note) {
-        callGAS('apiReportWrong', classInput.value, note).then(() => {
-          alert('Đã gửi báo cáo đến giảng viên / quản lý hệ thống!');
-        });
-      }
+      if (note) callGAS('apiReportWrong', classInput.value, note).then(() => alert('Đã gửi phản ánh!'));
     }
 
     async function submitAttendance() {
-      const absentList = Object.keys(attendanceMap).map(mssv => ({
-        mssv: mssv,
-        type: attendanceMap[mssv]
-      }));
-
+      const absentList = Object.keys(attendanceMap).map(mssv => ({ mssv, type: attendanceMap[mssv] }));
       const payload = {
         classCode: classInput.value,
         session: document.getElementById('select-session').value,
@@ -1306,12 +1542,11 @@
         date: document.getElementById('select-date').value,
         absent: absentList
       };
-
       try {
         await callGAS('apiSubmit', payload);
         alert('🎉 Đã lưu kết quả điểm danh thành công!');
       } catch (err) {
-        alert('Lỗi lưu điểm danh: ' + err.message);
+        alert('Lỗi: ' + err.message);
       }
     }
 
