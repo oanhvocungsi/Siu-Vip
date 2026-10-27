@@ -1,1054 +1,728 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>SIU VIP - Hệ Thống Điểm Danh Cinematic</title>
-  <style>
-    :root {
-      --bg: #000000;
-      --cyan: #00f3ff;
-      --cyan-bright: #80f9ff;
-      --cyan-glow: rgba(0, 243, 255, 0.75);
-      --red-flag: #da251d;
-      --gold-star: #ffeb3b;
-      --primary: #2563eb;
-    }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Điểm danh lớp học phần – SIU</title>
+<style>
+:root{
+  --navy:#1e3a8a; --blue:#3b82f6; --blue2:#2563eb; --cyan:#00f3ff; --violet:#a78bfa; --sky:#bae6fd;
+  --bg:#f3f7ff; --card:#ffffffd9; --text:#0f1b3d; --muted:#64748b; --line:#dbe6ff;
+  --ok:#16a34a; --bad:#dc2626; --warn:#d97706;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--text);background:var(--bg)}
+body{min-height:100vh;min-height:100dvh;overflow-x:hidden}
+.view{display:none}
+.view.active{display:block}
+button{font:inherit;cursor:pointer}
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      -webkit-tap-highlight-color: transparent;
-    }
+/* ============ DEVICE SELECTOR (BƯỚC 1: CHỌN MÁY TÍNH / ĐIỆN THOẠI) ============ */
+#picker{
+  position:fixed;inset:0;background:radial-gradient(900px 500px at 50% 30%,#1e293b 0,#030712 80%);
+  display:none;align-items:center;justify-content:center;padding:24px;z-index:200;flex-direction:column;
+}
+#picker.active{display:flex;animation:fadeIn .4s ease both}
+.picker-title{font-size:clamp(22px,4vmin,32px);font-weight:900;letter-spacing:-.5px;color:#fff;margin-bottom:6px;text-align:center}
+.picker-title span{color:var(--cyan);text-shadow:0 0 20px rgba(0,243,255,.6)}
+.picker-sub{font-size:14px;color:#94a3b8;margin-bottom:32px;text-align:center;max-width:440px}
+.cards-grid{display:flex;gap:20px;width:100%;max-width:540px;justify-content:center}
+.dev-card{
+  flex:1;max-width:240px;background:rgba(255,255,255,.05);border:2px solid rgba(255,255,255,.12);
+  border-radius:24px;padding:28px 18px;display:flex;flex-direction:column;align-items:center;cursor:pointer;
+  backdrop-filter:blur(16px);box-shadow:0 20px 40px rgba(0,0,0,.6);transition:all .25s cubic-bezier(.175,.885,.32,1.275);
+}
+.dev-card:hover{transform:translateY(-8px) scale(1.04);border-color:var(--cyan);box-shadow:0 0 35px rgba(0,243,255,.4);background:rgba(0,243,255,.08)}
+.dev-card:active{transform:scale(.96)}
+.dev-icon{font-size:42px;margin-bottom:14px;filter:drop-shadow(0 0 10px rgba(255,255,255,.3))}
+.dev-name{font-size:17px;font-weight:800;color:#fff;margin-bottom:6px}
+.dev-desc{font-size:12px;color:#94a3b8;text-align:center;line-height:1.4}
 
-    body {
-      background-color: var(--bg);
-      color: #ffffff;
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-      position: relative;
-    }
+/* ============ LOGIN ============ */
+#login{min-height:100dvh;background:
+  radial-gradient(900px 500px at 15% -10%,#dbeafe 0,transparent 60%),
+  radial-gradient(800px 500px at 100% 100%,#ede9fe 0,transparent 55%),var(--bg);
+  display:none;align-items:center;justify-content:center;padding:20px;position:relative}
+#login.active{display:flex}
+.login-wrap{width:100%;max-width:420px;position:relative}
 
-    /* ========================================================
-       PHẦN 1: MÀN HÌNH CHỌN THIẾT BỊ NỔI BẬT (DEVICE SELECTOR)
-       ======================================================== */
-    #device-picker-screen {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      z-index: 50;
-      background: radial-gradient(circle at center, #111827 0%, #030712 100%);
-      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-    }
+/* MASCOT ZONE: HỖ TRỢ CẢ 2 CHẾ ĐỘ (RIG VECTOR TÁCH MẮT & VIDEO AI CINEMA) */
+.mascot-zone{position:relative;height:225px;display:flex;justify-content:center;align-items:flex-end;margin-bottom:-26px;z-index:2}
+#mascot{width:270px;height:270px;position:relative;margin-bottom:-22px;transition:transform .3s;transform-origin:50% 90%;pointer-events:none}
+#mascot img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;user-select:none;-webkit-user-drag:none}
+#mascot .eye{position:absolute;overflow:hidden;border-radius:50%;width:7.9%;height:6.7%;transform:translate(-50%,-50%)}
+#mascot .eye.l{left:40.9%;top:44.8%}
+#mascot .eye.r{left:59.6%;top:44.8%}
+#mascot .eye .ir{position:absolute;left:50%;top:50%;width:112%;height:auto;aspect-ratio:120/123;transform:translate(-50%,-50%);transition:transform .09s linear;filter:brightness(.72) saturate(1.15)}
+#mascot .eye .hl{position:absolute;border-radius:50%;background:#fff;pointer-events:none;transition:transform .09s linear}
+#mascot .eye .hl.a{width:22%;height:24%;left:30%;top:20%}
+#mascot .eye .hl.b{width:11%;height:12%;left:58%;top:62%;opacity:.9}
+#closedImg{opacity:0;transition:opacity .06s}
+#mascot.blink #closedImg{opacity:1}
+#mascot.blink .eye{visibility:hidden}
+#mascot.tilt{transform:rotate(-3deg) translateY(-3px)}
+#mascot.bounce{animation:hop .2s ease-out}
+@keyframes hop{50%{transform:translateY(-8px) scale(1.02,.98)}}
+#mascot.idle>.base{animation:bob 3.2s ease-in-out infinite}
+#mascot.gone{display:none}
 
-    #device-picker-screen.hidden {
-      opacity: 0;
-      transform: scale(0.92);
-      pointer-events: none;
-      display: none;
-    }
+/* VIDEO STAGE CINEMA KHI CHỌN MODE THIẾT BỊ */
+#videoStage{
+  position:absolute;width:240px;height:240px;border-radius:32px;overflow:hidden;
+  bottom:0;display:none;mix-blend-mode:multiply;pointer-events:none;
+}
+#videoStage.on{display:block}
+#videoStage video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .2s ease}
+#videoStage video.curr{opacity:1}
 
-    .picker-title {
-      font-size: clamp(22px, 4vmin, 32px);
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      margin-bottom: 8px;
-      text-align: center;
-      background: linear-gradient(135deg, #ffffff 0%, var(--cyan) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
+#runner{position:absolute;left:50%;bottom:0;width:230px;height:230px;margin-left:-115px;display:none;will-change:transform}
+#runner.on{display:block}
+#runner .flipper{width:100%;height:100%;transition:transform .25s}
+#runner img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+#runner .step{animation:step .36s steps(1) infinite}
+#runner .step.b{animation-delay:.18s}
+@keyframes step{0%{opacity:1}50%{opacity:0}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.flyletter{position:fixed;left:0;top:0;z-index:50;font-weight:800;font-size:22px;color:var(--navy);pointer-events:none;text-shadow:0 2px 8px #3b82f655;will-change:transform}
+.card{background:var(--card);backdrop-filter:blur(10px);border:1px solid #fff;border-radius:22px;padding:26px 22px 22px;
+  box-shadow:0 20px 50px -20px #1e3a8a55,0 2px 0 #fff inset;position:relative;z-index:1}
+.card h1{font-size:22px;margin:6px 0 2px;text-align:center}
+.card p.sub{margin:0 0 16px;text-align:center;color:var(--muted);font-size:13.5px}
+.mode-pill{
+  display:flex;align-items:center;justify-content:center;gap:6px;background:#eef2ff;
+  border:1px solid #c7d2fe;padding:4px 12px;border-radius:999px;font-size:12px;
+  color:#3730a3;font-weight:700;margin:0 auto 16px auto;width:max-content;cursor:pointer;
+}
+.mode-pill:hover{background:#e0e7ff}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:13px;font-weight:600;color:#334155;margin-bottom:6px}
+.inwrap{position:relative}
+.inwrap svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--blue2);opacity:.8}
+.inwrap input{width:100%;height:50px;border-radius:14px;border:1.5px solid var(--line);background:#fff;padding:0 14px 0 42px;
+  font:inherit;font-size:16px;color:var(--text);outline:none;transition:.2s}
+.inwrap input:focus{border-color:var(--blue);box-shadow:0 0 0 4px #3b82f629}
+.inwrap input.err{border-color:var(--bad);animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.remember{display:flex;align-items:center;gap:8px;font-size:14px;color:#475569;margin:2px 0 16px}
+.remember input{width:18px;height:18px;accent-color:var(--blue2)}
+.btn{width:100%;height:50px;border:0;border-radius:14px;color:#fff;font-weight:700;font-size:16px;
+  background:linear-gradient(135deg,var(--blue),var(--navy));box-shadow:0 8px 20px -8px var(--blue2);
+  transition:transform .12s,box-shadow .2s,filter .2s;position:relative;overflow:hidden}
+.btn:hover{filter:brightness(1.08);box-shadow:0 12px 26px -8px var(--blue2)}
+.btn:active{transform:translateY(2px) scale(.99)}
+.btn:disabled{background:#cbd5e1;box-shadow:none;cursor:not-allowed;filter:none;color:#64748b}
+.loadmsg{display:none;text-align:center;margin-top:14px;color:var(--navy);font-size:14px;font-weight:600}
+.loadmsg.on{display:block}
+.loadmsg i{display:inline-block;width:14px;height:14px;border:2px solid #93c5fd;border-top-color:var(--navy);border-radius:50%;
+  vertical-align:-2px;margin-right:8px;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.errmsg{color:var(--bad);font-size:13px;text-align:center;margin-top:10px;min-height:16px}
+.card.busy .field,.card.busy .remember{opacity:.55;pointer-events:none}
 
-    .picker-sub {
-      font-size: 14px;
-      color: #94a3b8;
-      margin-bottom: 36px;
-      text-align: center;
-    }
+/* ============ CYBER ============ */
+#cyber{position:fixed;inset:0;background:radial-gradient(circle at 50% 50%,#0b1a4a 0,#050b24 70%);z-index:100;display:none;overflow:hidden;
+  touch-action:manipulation;user-select:none;-webkit-user-select:none}
+#cyber.active{display:block;animation:fadeIn .7s ease both}
+#cyber.out{animation:fadeOut .7s ease forwards}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes fadeOut{to{opacity:0}}
+#fx{position:absolute;inset:0;width:100%;height:100%}
+.core{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;z-index:3}
+#logoBtn{width:170px;height:170px;border-radius:50%;border:2px solid #7dd3fcaa;cursor:pointer;padding:0;
+  background:radial-gradient(circle at 35% 28%,#ffffff,#dbeafe 55%,#a9c7f7);position:relative;
+  box-shadow:0 0 0 8px #3b82f61a,0 0 44px #3b82f6aa,0 12px 0 #12307a,0 18px 30px #000a;
+  transition:transform .12s,box-shadow .12s;opacity:0;transform:scale(.6);display:flex;align-items:center;justify-content:center;
+  animation:logoIn .8s .2s cubic-bezier(.2,1.4,.4,1) forwards, pulse 2s 1s ease-in-out infinite}
+#logoBtn img{width:86%;height:86%;object-fit:contain;pointer-events:none;animation:wobble 2.4s ease-in-out infinite;filter:drop-shadow(0 2px 6px #1e3a8a55)}
+#logoBtn.down{transform:translateY(10px) scale(.93)!important;animation:none;opacity:1;
+  box-shadow:0 0 0 6px #3b82f633,0 0 28px #3b82f6aa,0 2px 0 #12307a,0 6px 12px #000a}
+@keyframes logoIn{to{opacity:1;transform:scale(1)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 8px #3b82f61a,0 0 30px #3b82f688,0 12px 0 #12307a,0 18px 30px #000a}
+  50%{box-shadow:0 0 0 14px #3b82f622,0 0 64px #60a5fa,0 12px 0 #12307a,0 18px 30px #000a}}
+@keyframes wobble{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg) translateY(-3px)}}
+.hint{margin-top:44px;display:flex;align-items:center;gap:10px;opacity:0;animation:fadeIn .6s 1.1s forwards;pointer-events:none}
+.arrow{font-size:34px;color:#7dd3fc;animation:point 1s ease-in-out infinite;filter:drop-shadow(0 0 8px #38bdf8)}
+@keyframes point{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.bubble{background:#e0f2fe;color:#0c2a6b;font-weight:700;padding:8px 14px;border-radius:14px;font-size:15px;position:relative}
+.helper{position:absolute;width:190px;height:190px;right:calc(50% + 120px);top:calc(50% - 110px);z-index:3;opacity:0;
+  animation:fadeIn .6s 1.2s forwards,bob 1.4s 1.2s ease-in-out infinite}
+.helper img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 0 14px #3b82f677)}
+.hide-hint .hint,.hide-hint .helper{opacity:0!important;animation:none;transition:opacity .2s}
+@media(max-width:640px){
+  #logoBtn{width:140px;height:140px}
+  .helper{right:auto;left:50%;top:calc(50% + 150px);margin-left:-60px;width:120px;height:120px}
+  .hint{margin-top:30px}
+  #mascot{width:220px;height:220px}.mascot-zone{height:190px}
+  #videoStage{width:200px;height:200px}
+  #runner{width:200px;height:200px;margin-left:-100px}
+  .cards-grid{flex-direction:column;align-items:center}
+  .dev-card{width:100%;max-width:280px}
+}
 
-    .device-cards-grid {
-      display: flex;
-      gap: 24px;
-      width: 100%;
-      max-width: 580px;
-      justify-content: center;
-    }
-
-    .device-card {
-      flex: 1;
-      max-width: 260px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 2px solid rgba(255, 255, 255, 0.12);
-      border-radius: 28px;
-      padding: 32px 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      cursor: pointer;
-      backdrop-filter: blur(20px);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .device-card:hover {
-      transform: translateY(-8px) scale(1.03);
-      border-color: var(--cyan);
-      box-shadow: 0 0 35px rgba(0, 243, 255, 0.35);
-      background: rgba(0, 243, 255, 0.08);
-    }
-
-    .device-card:active {
-      transform: scale(0.96);
-    }
-
-    .device-icon-wrap {
-      width: 80px;
-      height: 80px;
-      border-radius: 22px;
-      background: rgba(255, 255, 255, 0.08);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 18px;
-      font-size: 38px;
-      box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.05);
-    }
-
-    .device-name {
-      font-size: 18px;
-      font-weight: 800;
-      color: #ffffff;
-      margin-bottom: 6px;
-    }
-
-    .device-desc {
-      font-size: 12.5px;
-      color: #94a3b8;
-      text-align: center;
-      line-height: 1.4;
-    }
-
-    /* ========================================================
-       PHẦN 2: MÀN HÌNH ĐĂNG NHẬP VỚI VIDEO CHÂN THẬT MƯỢT NHƯ PHIM
-       ======================================================== */
-    #login-screen {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      display: none;
-      opacity: 0;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      z-index: 10;
-      background: #f1f5f9; /* Nền sáng tự nhiên cho clip mèo */
-      transition: opacity 0.5s ease;
-      overflow-y: auto;
-    }
-
-    #login-screen.active {
-      display: flex;
-      opacity: 1;
-    }
-
-    .login-container {
-      width: 100%;
-      max-width: 440px;
-      position: relative;
-      z-index: 10;
-    }
-
-    /* KHUNG VIDEO MASCOT 100% TỰ NHIÊN */
-    .mascot-video-container {
-      position: relative;
-      width: 270px;
-      height: 270px;
-      margin: 0 auto -35px auto;
-      z-index: 20;
-      border-radius: 36px;
-      overflow: hidden;
-      background: #f1f5f9;
-      box-shadow: 0 14px 35px -8px rgba(0, 0, 0, 0.15);
-      mix-blend-mode: multiply; /* Hòa trộn tự nhiên không lộ viền */
-    }
-
-    .mascot-video {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      object-fit: cover;
-      opacity: 0;
-      transition: opacity 0.25s ease;
-      pointer-events: none;
-    }
-
-    .mascot-video.current {
-      opacity: 1;
-    }
-
-    /* CARD ĐĂNG NHẬP */
-    .card {
-      background: #ffffff;
-      border-radius: 32px;
-      box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.12), 0 0 40px rgba(37, 99, 235, 0.08);
-      padding: 42px 32px 32px 32px;
-      border: 1.5px solid #e2e8f0;
-      color: #0f172a;
-    }
-
-    .brand-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      background: rgba(37, 99, 235, 0.08);
-      border: 1px solid rgba(37, 99, 235, 0.18);
-      padding: 6px 16px;
-      border-radius: 999px;
-      margin-bottom: 12px;
-    }
-
-    .brand-badge img { width: 22px; height: 22px; object-fit: contain; }
-    .brand-badge span {
-      font-size: 12.5px;
-      font-weight: 700;
-      color: var(--primary);
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-
-    .input-wrapper input {
-      width: 100%;
-      height: 52px;
-      padding: 0 18px;
-      border-radius: 16px;
-      border: 1.5px solid #cbd5e1;
-      background: #f8fafc;
-      font-size: 15px;
-      font-weight: 600;
-      color: #0f172a;
-      outline: none;
-      transition: all 0.2s;
-    }
-
-    .input-wrapper input:focus {
-      border-color: var(--primary);
-      background: #ffffff;
-      box-shadow: 0 0 0 4.5px rgba(37, 99, 235, 0.14);
-    }
-
-    .btn-submit {
-      width: 100%;
-      height: 54px;
-      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-      color: white;
-      border: none;
-      border-radius: 16px;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow: 0 10px 24px -4px rgba(37, 99, 235, 0.4);
-      transition: all 0.2s;
-    }
-
-    .btn-change-device {
-      background: transparent;
-      border: none;
-      color: #64748b;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-top: 14px;
-      display: block;
-      width: 100%;
-      text-align: center;
-      transition: color 0.2s;
-    }
-
-    .btn-change-device:hover {
-      color: var(--primary);
-    }
-
-    .shake {
-      animation: shakeCard 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
-    }
-
-    @keyframes shakeCard {
-      10%, 90% { transform: translate3d(-3px, 0, 0); }
-      20%, 80% { transform: translate3d(5px, 0, 0); }
-      30%, 50%, 70% { transform: translate3d(-7px, 0, 0); }
-      40%, 60% { transform: translate3d(7px, 0, 0); }
-    }
-
-    /* ========================================================
-       PHẦN 3: MÀN HÌNH CHUYỂN CẢNH CYBER (SAU KHI VÀO LỚP)
-       ======================================================== */
-    #cyber-portal-screen {
-      position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100vh;
-      background: #000000;
-      display: none;
-      opacity: 0;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      overflow: hidden;
-      transition: opacity 0.5s ease;
-    }
-
-    #cyber-portal-screen.active {
-      display: flex;
-      opacity: 1;
-    }
-
-    .cyber-grid {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-image: 
-        radial-gradient(circle at center, rgba(0, 243, 255, 0.08) 0%, transparent 65%),
-        linear-gradient(rgba(0, 243, 255, 0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 243, 255, 0.04) 1px, transparent 1px);
-      background-size: 100% 100%, 40px 40px, 40px 40px;
-      pointer-events: none;
-    }
-
-    #lightning-canvas {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      pointer-events: none;
-      z-index: 35;
-    }
-
-    /* 4 GÓC NHẬN TIA ĐIỆN */
-    .hud-corner {
-      position: absolute;
-      z-index: 40;
-      opacity: 0;
-      transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .hud-corner.active {
-      opacity: 1;
-      transform: translate(0, 0) !important;
-    }
-
-    .corner-tr { top: max(16px, 3.5vmin); right: max(16px, 3.5vmin); transform: translate(14px, -14px); }
-    .corner-bl { bottom: max(16px, 3.5vmin); left: max(16px, 3.5vmin); display: flex; align-items: center; gap: 12px; transform: translate(-14px, 14px); }
-    .corner-br { bottom: max(16px, 3.5vmin); right: max(16px, 3.5vmin); text-align: right; transform: translate(14px, 14px); }
-    .corner-tl-badge {
-      top: max(16px, 3.5vmin); left: max(16px, 3.5vmin);
-      transform: translate(-14px, -14px);
-      display: flex; align-items: center; gap: 10px;
-      background: rgba(0, 243, 255, 0.05);
-      border: 1px solid rgba(0, 243, 255, 0.25);
-      padding: 6px 14px; border-radius: 999px;
-    }
-
-    .flag-card {
-      width: clamp(56px, 9vmin, 84px); height: clamp(38px, 6vmin, 56px);
-      background: var(--red-flag); border-radius: 6px;
-      box-shadow: 0 0 25px rgba(218, 37, 29, 0.7);
-      display: flex; align-items: center; justify-content: center;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-    }
-    .flag-card svg { width: 44%; height: 44%; fill: var(--gold-star); filter: drop-shadow(0 0 6px var(--gold-star)); }
-
-    .intl-globe {
-      width: clamp(38px, 6.5vmin, 50px); height: clamp(38px, 6.5vmin, 50px);
-      border-radius: 50%; border: 1.8px solid var(--cyan);
-      box-shadow: 0 0 18px var(--cyan-glow);
-      position: relative; animation: spinGlobe 12s linear infinite;
-    }
-    @keyframes spinGlobe { to { transform: rotate(360deg); } }
-    .intl-globe::before { content: ""; position: absolute; width: 44%; height: 100%; border-radius: 50%; border: 1px dashed var(--cyan); }
-    .intl-globe::after { content: ""; position: absolute; width: 100%; height: 44%; border-radius: 50%; border: 1px dashed var(--cyan); }
-
-    .asean-main {
-      font-size: clamp(20px, 3.6vmin, 28px); font-weight: 900; letter-spacing: 6px;
-      background: linear-gradient(135deg, #ffffff 0%, var(--cyan) 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-
-    /* TRUNG TÂM: ĐỒNG BỘ LOGO SIU VÀ CHIP TỎA ĐIỆN */
-    .center-mecha-stage {
-      position: relative;
-      width: min(85vw, 420px); height: min(85vw, 420px);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 20;
-    }
-
-    #wires-svg-layer {
-      position: absolute; top: -100vh; left: -100vw;
-      width: 300vw; height: 300vh; pointer-events: none; z-index: 10;
-    }
-
-    .cable-wire {
-      stroke: var(--cyan); stroke-width: 2.8; fill: none;
-      stroke-dasharray: 100; stroke-dashoffset: 100;
-      filter: drop-shadow(0 0 8px var(--cyan)) drop-shadow(0 0 18px var(--cyan));
-      transition: stroke-dashoffset 1.4s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .cable-wire.charged { stroke-dashoffset: 0; }
-
-    .central-logo-chip {
-      position: relative;
-      width: clamp(100px, 18vmin, 140px); height: clamp(100px, 18vmin, 140px);
-      border-radius: 50%;
-      background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
-      border: 2.5px solid var(--cyan);
-      box-shadow: 0 0 35px var(--cyan-glow), inset 0 0 20px rgba(0, 243, 255, 0.35);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 25; cursor: pointer;
-      transition: transform 0.16s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    .central-logo-chip.pressed { transform: scale(0.88); box-shadow: 0 0 85px var(--cyan); }
-    .central-logo-chip svg { position: absolute; width: 125%; height: 125%; overflow: visible; pointer-events: none; }
-
-    .circle-reveal-stroke {
-      stroke: var(--cyan); stroke-width: 2.8; fill: none;
-      stroke-dasharray: 100; stroke-dashoffset: 100;
-      filter: drop-shadow(0 0 8px var(--cyan)); transform-origin: center;
-    }
-    .circle-reveal-stroke.draw { animation: drawCircleClockwise 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-    @keyframes drawCircleClockwise { to { stroke-dashoffset: 0; } }
-
-    .electric-orbit-ring {
-      stroke: var(--cyan-bright); stroke-width: 2; stroke-dasharray: 8 16;
-      fill: none; opacity: 0; transform-origin: center; animation: electricSpin 5s linear infinite;
-    }
-    .electric-orbit-ring.active { opacity: 0.95; transition: opacity 0.4s ease; }
-    @keyframes electricSpin { to { transform: rotate(360deg); } }
-
-    .logo-inside-chip {
-      width: 72%; height: 72%; object-fit: contain; border-radius: 50%;
-      filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.6));
-      opacity: 0; transform: scale(0.85); transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .logo-inside-chip.visible { opacity: 1; transform: scale(1); }
-
-    .tri-armor-plate {
-      position: absolute; width: clamp(34px, 6.5vmin, 44px); height: clamp(34px, 6.5vmin, 44px);
-      z-index: 22; cursor: pointer; transition: transform 0.16s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-    .tri-armor-plate polygon { fill: #091322; stroke: var(--cyan); stroke-width: 2.5; transition: all 0.2s ease; }
-    .tri-armor-plate.lit polygon { fill: var(--cyan); filter: drop-shadow(0 0 18px var(--cyan)) drop-shadow(0 0 30px #ffffff); }
-    .tri-armor-plate.pressed { transform: scale(0.82) !important; }
-    .tri-pos-top { top: 12%; left: 50%; transform: translateX(-50%); }
-    .tri-pos-bl { bottom: 16%; left: 16%; transform: rotate(-120deg); }
-    .tri-pos-br { bottom: 16%; right: 16%; transform: rotate(120deg); }
-
-    /* CHỮ VIỆT NAM VẾT DẦU LOANG */
-    .vn-oil-container {
-      position: absolute; bottom: max(60px, 9.5vmin); left: 50%;
-      transform: translateX(-50%); width: max-content; text-align: center; z-index: 30; pointer-events: none;
-    }
-    .vn-label {
-      font-size: clamp(26px, 5.2vmin, 44px); font-weight: 900; letter-spacing: clamp(6px, 1.6vmin, 15px);
-      text-transform: uppercase; user-select: none; white-space: nowrap;
-    }
-    .vn-dark-base { color: #1e293b; opacity: 0.55; }
-    .vn-oil-spread {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      background: linear-gradient(135deg, #ef4444 0%, #f59e0b 50%, #facc15 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      filter: drop-shadow(0 0 25px rgba(245, 158, 11, 0.8));
-      clip-path: circle(0% at 50% 0%); transition: clip-path 1.9s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .vn-oil-spread.spread-active { clip-path: circle(160% at 50% 0%); }
-
-    .btn-enter-hub {
-      position: absolute; bottom: max(16px, 3vmin); left: 50%;
-      transform: translateX(-50%); height: 46px; padding: 0 32px; border-radius: 999px;
-      background: linear-gradient(135deg, var(--cyan) 0%, #2563eb 100%); color: #000000;
-      font-size: 14.5px; font-weight: 800; letter-spacing: 1.5px; border: none; cursor: pointer;
-      box-shadow: 0 0 30px rgba(0, 243, 255, 0.7); opacity: 0; pointer-events: none;
-      transition: all 0.3s; z-index: 50; white-space: nowrap;
-    }
-    .btn-enter-hub.active { opacity: 1; pointer-events: auto; }
-    .btn-enter-hub:hover { transform: translateX(-50%) scale(1.06); box-shadow: 0 0 45px var(--cyan); }
-
-    /* ========================================================
-       PHẦN 4: MÀN HÌNH ĐIỂM DANH
-       ======================================================== */
-    #attendance-wrapper {
-      display: none; min-height: 100vh; width: 100%;
-      align-items: center; justify-content: center; padding: 20px 16px;
-    }
-    #attendance-screen {
-      width: 100%; max-width: 620px; background: rgba(255, 255, 255, 0.96);
-      border-radius: 32px; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
-      padding: 28px 26px; color: #0f172a; z-index: 10; margin: auto;
-    }
-    .btn-att {
-      padding: 6px 12px; border-radius: 10px; font-size: 12px; font-weight: 700;
-      border: 1.5px solid transparent; cursor: pointer;
-    }
-    .btn-att.kp { background: #fee2e2; color: #dc2626; }
-    .btn-att.kp.active { background: #dc2626; color: #fff; }
-    .btn-att.cp { background: #fef3c7; color: #d97706; }
-    .btn-att.cp.active { background: #d97706; color: #fff; }
-  </style>
+/* ============ APP ============ */
+#app{background:#eef3ff;min-height:100dvh;padding-bottom:84px}
+.topbar{position:sticky;top:0;z-index:20;background:linear-gradient(135deg,#1e3a8a,#2549b3);color:#fff;padding:14px 16px;
+  display:flex;align-items:center;gap:10px;box-shadow:0 6px 18px -8px #1e3a8a}
+.topbar .t{flex:1;min-width:0}
+.topbar b{display:block;font-size:17px}
+.topbar small{opacity:.85;font-size:12.5px}
+.topbar button{background:#ffffff26;border:1px solid #ffffff55;color:#fff;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600}
+.container{max-width:560px;margin:0 auto;padding:14px 14px 0}
+.panel{background:#fff;border-radius:18px;padding:16px;box-shadow:0 8px 24px -14px #1e3a8a66;margin-bottom:12px;animation:rise .5s both}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
+.panel h2{margin:0 0 4px;font-size:17px;letter-spacing:.2px}
+.panel .meta{font-size:13px;color:#475569;line-height:1.5}
+.panel label.l{display:block;margin:12px 0 6px;font-size:13px;font-weight:600;color:#334155}
+select,input[type=date],input[type=search]{width:100%;height:46px;border:1.5px solid var(--line);border-radius:12px;padding:0 12px;font:inherit;font-size:15px;background:#fff;color:var(--text);outline:none}
+select:focus,input[type=date]:focus,input[type=search]:focus{border-color:var(--blue);box-shadow:0 0 0 3px #3b82f622}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg button{height:44px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font-weight:600;color:#334155}
+.seg button.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.note{margin-top:12px;background:#eef2ff;border:1px solid #c7d2fe;color:#3730a3;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.45}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat{border-radius:14px;padding:10px 6px;text-align:center;border:1px solid}
+.stat b{display:block;font-size:26px;line-height:1.1}
+.stat span{font-size:12.5px;font-weight:600}
+.stat.ok{background:#dcfce7;border-color:#86efac;color:#166534}
+.stat.bad{background:#fee2e2;border-color:#fca5a5;color:#991b1b}
+.stat.warn{background:#fef3c7;border-color:#fcd34d;color:#92400e}
+.search{position:relative;margin-bottom:10px}
+.search input{padding-left:40px}
+.search:before{content:"🔍";position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px}
+.stu{background:#fff;border-radius:14px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:8px;border:1.5px solid transparent;
+  box-shadow:0 4px 14px -10px #1e3a8a88;transition:.2s}
+.stu .info{flex:1;min-width:0}
+.stu .nm{font-weight:700;font-size:15px}
+.stu .id{font-size:12.5px;color:var(--muted)}
+.stu button{height:38px;padding:0 12px;border-radius:10px;border:1.5px solid #cbd5e1;background:#fff;font-size:13px;font-weight:600;color:#334155;transition:.15s}
+.stu button:active{transform:scale(.95)}
+.stu.bad{border-color:#fca5a5;background:#fff5f5}
+.stu.bad .b-bad{background:var(--bad);border-color:var(--bad);color:#fff}
+.stu.warn{border-color:#fcd34d;background:#fffbeb}
+.stu.warn .b-warn{background:var(--warn);border-color:var(--warn);color:#fff}
+.ghost{width:100%;height:46px;border-radius:12px;border:1.5px solid #bfd0ff;background:#fff;color:var(--navy);font-weight:700;margin-bottom:10px}
+.ghost.sm{border-style:dashed}
+.bottombar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid var(--line);
+  padding:10px 16px calc(10px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:12px;box-shadow:0 -8px 24px -16px #1e3a8a}
+.bottombar .sum{flex:1;font-size:13px;color:#334155;line-height:1.35}
+.bottombar .sum b{display:block;font-size:14px}
+.bottombar .btn{width:auto;min-width:96px;padding:0 22px;height:46px}
+.toast{position:fixed;left:50%;bottom:92px;transform:translate(-50%,20px);background:#0f172a;color:#fff;padding:11px 18px;border-radius:12px;
+  font-size:14px;opacity:0;pointer-events:none;transition:.3s;z-index:200;max-width:90vw;text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.hidden{display:none!important}
+.empty{text-align:center;color:var(--muted);padding:24px;font-size:14px}
+#cheer{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;flex-direction:column;background:#0b1a4acc;backdrop-filter:blur(4px);cursor:pointer}
+#cheer.on{display:flex;animation:fadeIn .25s ease both}
+#cheer img{width:min(300px,70vw);height:auto;animation:pop .6s cubic-bezier(.2,1.5,.4,1) both,bob 1.2s .6s ease-in-out infinite;filter:drop-shadow(0 10px 24px #0008)}
+#cheer b{color:#fff;font-size:20px;margin-top:6px;text-align:center;padding:0 20px}
+#cheer small{color:#bfdbfe;margin-top:6px}
+@keyframes pop{from{transform:scale(.3) translateY(60px);opacity:0}}
+@media(min-width:900px){.container{max-width:720px}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01s!important;animation-iteration-count:1!important}}
+</style>
 </head>
 <body>
 
-  <!-- ==================== PHẦN 1: MÀN HÌNH CHỌN THIẾT BỊ NỔI BẬT ==================== -->
-  <div id="device-picker-screen">
-    <div class="picker-title">CHỌN THIẾT BỊ TRUY CẬP</div>
-    <div class="picker-sub">Chọn thiết bị để kích hoạt hoạt ảnh tương tác phù hợp</div>
-
-    <div class="device-cards-grid">
-      <!-- Thẻ Điện Thoại -->
-      <div class="device-card" onclick="selectDevice('mobile')">
-        <div class="device-icon-wrap">📱</div>
-        <div class="device-name">Điện thoại</div>
-        <div class="device-desc">Mèo nghiêng người cầm điện thoại bấm theo từng phím</div>
-      </div>
-
-      <!-- Thẻ Máy Tính / Laptop -->
-      <div class="device-card" onclick="selectDevice('laptop')">
-        <div class="device-icon-wrap">💻</div>
-        <div class="device-name">Máy tính / Laptop</div>
-        <div class="device-desc">Mở laptop và mèo gõ phím theo thời gian thực</div>
-      </div>
+<!-- ======================= 0. BƯỚC 1: CHỌN THIẾT BỊ NỔI BẬT ======================= -->
+<section id="picker" class="active">
+  <div class="picker-title">CHỌN <span>THIẾT BỊ</span> TRUY CẬP</div>
+  <div class="picker-sub">Chọn thiết bị để kích hoạt hoạt ảnh tương tác mèo sống động</div>
+  <div class="cards-grid">
+    <div class="dev-card" onclick="pickMode('mobile')">
+      <div class="dev-icon">📱</div>
+      <div class="dev-name">Điện thoại</div>
+      <div class="dev-desc">Mèo nghiêng người cầm điện thoại bấm theo từng phím</div>
+    </div>
+    <div class="dev-card" onclick="pickMode('laptop')">
+      <div class="dev-icon">💻</div>
+      <div class="dev-name">Máy tính / Laptop</div>
+      <div class="dev-desc">Mở laptop và mèo gõ phím theo thời gian thực</div>
     </div>
   </div>
+</section>
 
-
-  <!-- ==================== PHẦN 2: MÀN HÌNH ĐĂNG NHẬP VỚI VIDEO MASCOT ==================== -->
-  <div id="login-screen">
-    <div class="login-container">
+<!-- ======================= 1. LOGIN ======================= -->
+<section id="login" class="view">
+  <div class="login-wrap">
+    <div class="mascot-zone" id="mascotZone">
       
-      <!-- KHUNG VIDEO MASCOT CHÂN THẬT NHƯ PHIM -->
-      <div class="mascot-video-container" id="video-container">
-        <!-- Clip Chờ -->
-        <video id="vid-cho" class="mascot-video current" src="assets/clips/01-cho.mp4" playsinline muted loop autoplay></video>
-        <!-- Laptop clips -->
-        <video id="vid-lay-lap" class="mascot-video" src="assets/clips/02-lay-lap.mp4" playsinline muted></video>
-        <video id="vid-go-lap" class="mascot-video" src="assets/clips/03-go-lap.mp4" playsinline muted loop></video>
-        <video id="vid-lap-thanh-cong" class="mascot-video" src="assets/clips/04-lap-thanh-cong.mp4" playsinline muted></video>
-        <video id="vid-sai-lap" class="mascot-video" src="assets/clips/05-sai-lap.mp4" playsinline muted></video>
-        <!-- Mobile clips -->
-        <video id="vid-lay-dt" class="mascot-video" src="assets/clips/06-lay-dt.mp4" playsinline muted></video>
-        <video id="vid-bam-dt" class="mascot-video" src="assets/clips/07-bam-dt.mp4" playsinline muted loop></video>
-        <video id="vid-dt-thanh-cong" class="mascot-video" src="assets/clips/08-dt-thanh-cong.mp4" playsinline muted></video>
-        <video id="vid-sai-dt" class="mascot-video" src="assets/clips/09-sai-dt.mp4" playsinline muted></video>
+      <!-- MODE 1: RIG CHÍNH DIỆN MẮT NHÌN THEO CHỮ (CLAUDE LOGIC) -->
+      <div id="mascot" class="idle">
+        <img class="base" id="baseImg" data-a="front-noeyes" alt="">
+        <div class="eye l"><img class="ir" data-a="iris" alt=""><i class="hl a"></i><i class="hl b"></i></div>
+        <div class="eye r"><img class="ir" data-a="iris" alt=""><i class="hl a"></i><i class="hl b"></i></div>
+        <img id="closedImg" data-a="front-closed" alt="">
       </div>
 
-      <!-- FORM ĐĂNG NHẬP -->
-      <div class="card" id="login-card">
-        <div style="text-align: center; margin-bottom: 24px;">
-          <div class="brand-badge"><img src="assets/logo.png" alt="SIU"><span>Saigon International University</span></div>
-          <h1 style="font-size: 22px; font-weight: 800;">Điểm Danh Lớp Học</h1>
-          <p style="font-size: 13.5px; color: #64748b; margin-top: 4px;" id="mode-notice">Chế độ máy tính: gõ phím cùng mèo</p>
-        </div>
-
-        <form id="login-form" onsubmit="handleLogin(event)">
-          <div style="margin-bottom: 18px;">
-            <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 7px;">Mã lớp học phần</label>
-            <div class="input-wrapper"><input type="text" id="class-code" placeholder="VD: 241_71ITEC20203_01" required autocomplete="off"></div>
-          </div>
-
-          <div style="margin-bottom: 18px;">
-            <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 7px;">Mã PIN (6 số)</label>
-            <div class="input-wrapper"><input type="password" id="pin-code" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="••••••" required></div>
-          </div>
-
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; font-size: 13.5px; color: #475569;">
-            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-              <input type="checkbox" id="remember-me" style="width: 18px; height: 18px; accent-color: #2563eb;">
-              <span>Ghi nhớ mã lớp trên máy này</span>
-            </label>
-          </div>
-
-          <button type="submit" class="btn-submit" id="btn-login">Vào lớp</button>
-          <button type="button" class="btn-change-device" onclick="showDevicePicker()">⇄ Đổi thiết bị (Điện thoại / Máy tính)</button>
-          <div id="loading-notice" style="display: none; margin-top: 18px; text-align: center; font-size: 13.5px; color: #2563eb; font-weight: 700;">🐾 Đang xác thực thông tin lớp...</div>
-          <div id="error-msg" style="display: none; margin-top: 14px; padding: 12px 16px; background: #fef2f2; border: 1px solid #fee2e2; border-radius: 14px; color: #dc2626; font-size: 13px; text-align: center;"></div>
-        </form>
+      <!-- MODE 2: VIDEO CINEMA KHI CHỌN LAPTOP HOẶC ĐIỆN THOẠI -->
+      <div id="videoStage">
+        <video id="vCho" src="assets/clips/01-cho.mp4" playsinline muted loop autoplay></video>
+        <video id="vLayLap" src="assets/clips/02-lay-lap.mp4" playsinline muted></video>
+        <video id="vGoLap" src="assets/clips/03-go-lap.mp4" playsinline muted loop></video>
+        <video id="vLapOk" src="assets/clips/04-lap-thanh-cong.mp4" playsinline muted></video>
+        <video id="vLapBad" src="assets/clips/05-sai-lap.mp4" playsinline muted></video>
+        
+        <video id="vLayDt" src="assets/clips/06-lay-dt.mp4" playsinline muted></video>
+        <video id="vBamDt" src="assets/clips/07-bam-dt.mp4" playsinline muted loop></video>
+        <video id="vDtOk" src="assets/clips/08-dt-thanh-cong.mp4" playsinline muted></video>
+        <video id="vDtBad" src="assets/clips/09-sai-dt.mp4" playsinline muted></video>
       </div>
-    </div>
-  </div>
 
-
-  <!-- ==================== PHẦN 3: MÀN HÌNH CYBER ĐIỆN ẢNH SAU KHI VÀO LỚP ==================== -->
-  <div id="cyber-portal-screen">
-    <div class="cyber-grid"></div>
-    <canvas id="lightning-canvas"></canvas>
-
-    <!-- CÁC ICON GÓC -->
-    <div class="hud-corner corner-tl-badge" id="corner-tl"><img src="assets/logo.png" style="width: 20px; height: 20px;" alt="SIU"><span>SIU PORTAL</span></div>
-
-    <div class="hud-corner corner-tr" id="corner-tr">
-      <div class="flag-card">
-        <svg viewBox="0 0 100 100"><polygon points="50,15 61.7,43.3 92.4,43.3 67.5,61.4 77.1,89.7 50,72.2 22.9,89.7 32.5,61.4 7.6,43.3 38.3,43.3" /></svg>
-      </div>
+      <div id="runner"><div class="flipper" id="flipper"><img class="step a" data-a="run-1" alt=""><img class="step b" data-a="run-2" alt=""></div></div>
     </div>
 
-    <div class="hud-corner corner-bl" id="corner-bl">
-      <div class="intl-globe"></div>
-      <div style="display:flex; flex-direction:column;"><span style="font-size:12px; font-weight:800; letter-spacing:2px;">INTERNATIONAL</span><span style="font-size:9px; color:var(--cyan); letter-spacing:1px;">SAIGON UNIVERSITY</span></div>
-    </div>
-
-    <div class="hud-corner corner-br" id="corner-br">
-      <div class="asean-main">ASEAN</div>
-      <div style="font-size:10px; letter-spacing:4px; color:#94a3b8; font-weight:700;">NATIONAL CEO</div>
-    </div>
-
-    <!-- TRUNG TÂM: ĐỒNG BỘ LOGO SIU VÀ CHIP TỎA ĐIỆN RA 4 GÓC -->
-    <div class="center-mecha-stage">
-      <svg id="wires-svg-layer" viewBox="0 0 3000 3000">
-        <path id="wire-tl" class="cable-wire" pathLength="100" d="M 1500 1500 Q 1200 1100 200 200" />
-        <path id="wire-tr" class="cable-wire" pathLength="100" d="M 1500 1500 Q 1800 1100 2800 200" />
-        <path id="wire-bl" class="cable-wire" pathLength="100" d="M 1500 1500 Q 1400 2000 300 2800" />
-        <path id="wire-br" class="cable-wire" pathLength="100" d="M 1500 1500 Q 1700 2100 2700 2800" />
-      </svg>
-
-      <div class="tri-armor-plate tri-pos-top" id="tri-top"><svg viewBox="0 0 100 100"><polygon points="50,10 90,85 10,85" /></svg></div>
-      <div class="tri-armor-plate tri-pos-bl" id="tri-bl"><svg viewBox="0 0 100 100"><polygon points="50,10 90,85 10,85" /></svg></div>
-      <div class="tri-armor-plate tri-pos-br" id="tri-br"><svg viewBox="0 0 100 100"><polygon points="50,10 90,85 10,85" /></svg></div>
-
-      <!-- CHIP LOGO TRUNG TÂM -->
-      <div class="central-logo-chip" id="central-logo-chip">
-        <svg viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="46" pathLength="100" class="circle-reveal-stroke" id="chip-circle-draw" />
-          <circle cx="50" cy="50" r="48" class="electric-orbit-ring" id="chip-electric-ring" />
-        </svg>
-        <img src="assets/logo.png" class="logo-inside-chip" id="logo-inside-chip" alt="SIU Core Logo">
-      </div>
-    </div>
-
-    <!-- CHỮ VIỆT NAM VẾT DẦU LOANG -->
-    <div class="vn-oil-container">
-      <div class="vn-label vn-dark-base">VIỆT NAM</div>
-      <div class="vn-label vn-oil-spread" id="vn-oil-spread">VIỆT NAM</div>
-    </div>
-
-    <button class="btn-enter-hub" id="btn-enter-hub" onclick="openAttendanceScreen()">TIẾP TỤC ĐIỂM DANH ➔</button>
-  </div>
-
-
-  <!-- ==================== PHẦN 4: MÀN HÌNH ĐIỂM DANH ==================== -->
-  <div id="attendance-wrapper">
-    <div id="attendance-screen">
-      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1.5px solid #f1f5f9; padding-bottom: 16px; margin-bottom: 18px;">
-        <div>
-          <div style="font-size: 19px; font-weight: 800;" id="dash-class-name">Lớp: 241_71ITEC20203_01</div>
-          <div style="font-size: 13px; color: #64748b; margin-top: 3px;">Sĩ số: <span id="dash-total">8</span> sinh viên</div>
-        </div>
-        <button style="padding: 10px 16px; border-radius: 12px; background: #f1f5f9; color: #475569; font-weight: 700; border: none; cursor: pointer;" onclick="logout()">Đổi lớp</button>
-      </div>
-
-      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px;">
-        <select id="select-session" style="height: 42px; border-radius: 12px; border: 1.5px solid #cbd5e1; padding: 0 10px; font-weight: 600;"><option>Buổi 1</option><option>Buổi 2</option><option>Buổi 3</option><option selected>Buổi 4</option></select>
-        <select id="select-status" style="height: 42px; border-radius: 12px; border: 1.5px solid #cbd5e1; padding: 0 10px; font-weight: 600;"><option value="normal">Có học</option><option value="off">Giảng viên nghỉ</option></select>
-        <input type="date" id="select-date" style="height: 42px; border-radius: 12px; border: 1.5px solid #cbd5e1; padding: 0 10px; font-weight: 600;">
-      </div>
-
-      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; text-align: center;">
-        <div style="background: #ecfdf5; border: 1.5px solid rgba(16, 185, 129, 0.35); border-radius: 16px; padding: 12px 10px; color: #065f46;"><div style="font-size: 22px; font-weight: 900;" id="stat-present">8</div><div style="font-size: 12px; font-weight: 700;">Có mặt</div></div>
-        <div style="background: #fef2f2; border: 1.5px solid rgba(239, 68, 68, 0.35); border-radius: 16px; padding: 12px 10px; color: #991b1b;"><div style="font-size: 22px; font-weight: 900;" id="stat-kp">0</div><div style="font-size: 12px; font-weight: 700;">Không phép</div></div>
-        <div style="background: #fffbeb; border: 1.5px solid rgba(245, 158, 11, 0.35); border-radius: 16px; padding: 12px 10px; color: #92400e;"><div style="font-size: 22px; font-weight: 900;" id="stat-cp">0</div><div style="font-size: 12px; font-weight: 700;">Có phép</div></div>
-      </div>
-
-      <input type="text" id="search-student" placeholder="🔍 Tìm theo MSSV hoặc họ tên..." oninput="filterStudents()" style="width: 100%; height: 46px; padding: 0 16px; border-radius: 14px; border: 1.5px solid #cbd5e1; margin-bottom: 14px; outline: none;">
-      <div id="student-list-container" style="max-height: 380px; overflow-y: auto; border-radius: 16px; border: 1.5px solid #e2e8f0; margin-bottom: 20px;"></div>
-
-      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 16px; border-top: 1.5px solid #f1f5f9;">
-        <button style="padding: 11px 18px; border-radius: 12px; background: #f1f5f9; color: #475569; font-weight: 700; border: none; cursor: pointer;" onclick="resetAllAbsent()">Bỏ chọn tất cả</button>
-        <button style="padding: 11px 18px; border-radius: 12px; background: #f1f5f9; color: #475569; font-weight: 700; border: none; cursor: pointer;" onclick="reportWrongList()">Báo sai</button>
-        <button style="flex: 1; height: 46px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border-radius: 12px; font-weight: 800; border: none; cursor: pointer;" onclick="submitAttendance()">Gửi điểm danh</button>
-      </div>
-    </div>
-  </div>
-
-
-  <!-- ==================== LOGIC JAVASCRIPT ĐIỀU KHIỂN ==================== -->
-  <script>
-    /* ========================================================
-       1. QUẢN LÝ CHẾ ĐỘ THIẾT BỊ & PHÁT CLIP TƯƠNG ỨNG
-       ======================================================== */
-    let selectedDevice = 'laptop'; // 'laptop' | 'mobile'
-    let currentVideoEl = document.getElementById('vid-cho');
-    let typingDebounceTimer = null;
-
-    const videos = {
-      cho: document.getElementById('vid-cho'),
-      layLap: document.getElementById('vid-lay-lap'),
-      goLap: document.getElementById('vid-go-lap'),
-      lapOk: document.getElementById('vid-lap-thanh-cong'),
-      lapFail: document.getElementById('vid-sai-lap'),
-      layDt: document.getElementById('vid-lay-dt'),
-      bamDt: document.getElementById('vid-bam-dt'),
-      dtOk: document.getElementById('vid-dt-thanh-cong'),
-      dtFail: document.getElementById('vid-sai-dt')
-    };
-
-    function playVideo(targetEl, loop = false) {
-      if (currentVideoEl === targetEl && !targetEl.paused) return;
+    <form class="card" id="loginForm" autocomplete="off" novalidate>
+      <div class="mode-pill" id="modePill" onclick="showPicker()">💻 Chế độ: Laptop (Bấm để đổi)</div>
+      <h1>Đăng nhập lớp trưởng</h1>
+      <p class="sub">Nhập mã lớp học phần và mã PIN do Phòng Tuyển sinh &amp; CTSV gửi.</p>
       
-      Object.values(videos).forEach(v => {
-        if (v !== targetEl) {
-          v.classList.remove('current');
-          v.pause();
-        }
-      });
+      <div class="field">
+        <label for="classId">Mã lớp học phần</label>
+        <div class="inwrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg>
+          <input id="classId" placeholder="VD: 2BAS0005_TA121" autocapitalize="characters" spellcheck="false" enterkeyhint="next">
+        </div>
+      </div>
+      <div class="field">
+        <label for="pin">Mã PIN (6 số)</label>
+        <div class="inwrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          <input id="pin" type="password" inputmode="numeric" maxlength="6" placeholder="••••••" enterkeyhint="go">
+        </div>
+      </div>
+      <label class="remember"><input type="checkbox" id="remember" checked> Ghi nhớ trên thiết bị này</label>
+      <button class="btn" id="goBtn" type="submit">Vào lớp →</button>
+      <div class="loadmsg" id="loadMsg"><i></i>Đang tìm lớp, vui lòng chờ...</div>
+      <div class="errmsg" id="errMsg" role="alert"></div>
+    </form>
+  </div>
+</section>
 
-      targetEl.loop = loop;
-      targetEl.currentTime = 0;
-      targetEl.classList.add('current');
-      targetEl.play().catch(() => {});
-      currentVideoEl = targetEl;
+<!-- ======================= 2. CYBER TRANSITION ======================= -->
+<section id="cyber" class="view">
+  <canvas id="fx"></canvas>
+  <div class="core">
+    <button id="logoBtn" aria-label="Nhấn để vào lớp"><img data-a="logo" alt="Logo SIU"></button>
+    <div class="hint"><span class="arrow">☝</span><span class="bubble">Nhấn vào nè!</span></div>
+  </div>
+  <div class="helper" id="helper"><img data-a="point" alt=""></div>
+</section>
+
+<!-- ======================= 3. APP ======================= -->
+<section id="app" class="view">
+  <header class="topbar">
+    <div class="t"><b>Điểm danh lớp học phần</b><small>Phòng Tuyển sinh &amp; Công tác Sinh viên – SIU</small></div>
+    <button id="logoutBtn">Đổi lớp</button>
+  </header>
+  <main class="container">
+    <div class="panel">
+      <h2 id="clsName">—</h2>
+      <div class="meta" id="clsMeta"></div>
+
+      <label class="l" for="session">Buổi</label>
+      <select id="session"></select>
+
+      <label class="l">Buổi này</label>
+      <div class="seg" id="seg">
+        <button type="button" data-v="study" class="on">Có học</button>
+        <button type="button" data-v="off">Giảng viên nghỉ</button>
+      </div>
+
+      <label class="l" for="date">Ngày học</label>
+      <input type="date" id="date">
+
+      <div class="note">Em chép theo số điểm danh của giảng viên: chỉ chọn những bạn <b>VẮNG</b>. Bạn nào không chọn được tính là có mặt.</div>
+    </div>
+
+    <div id="listArea">
+      <div class="stats">
+        <div class="stat ok"><b id="nOk">0</b><span>Có mặt</span></div>
+        <div class="stat bad"><b id="nBad">0</b><span>Không phép</span></div>
+        <div class="stat warn"><b id="nWarn">0</b><span>Có phép</span></div>
+      </div>
+      <div class="search"><input type="search" id="q" placeholder="Tìm tên hoặc MSSV"></div>
+      <div id="list"></div>
+      <button class="ghost" id="clearAll">Bỏ chọn tất cả (cả lớp có mặt)</button>
+      <button class="ghost sm" id="reportWrong">⚠ Báo sai danh sách lớp</button>
+    </div>
+  </main>
+  <div class="bottombar">
+    <div class="sum"><b id="sumTop">Buổi 1 · Có học</b><span id="sumBot">Có mặt 0/0 · Vắng 0</span></div>
+    <button class="btn" id="sendBtn">Gửi</button>
+  </div>
+</section>
+
+<div id="cheer"><img data-a="cheer" alt=""><b id="cheerMsg">Đã gửi điểm danh!</b><small>Chạm để đóng</small></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ========================= KẾT NỐI BACKEND (Google Apps Script) ========================= */
+const GAS = (typeof google !== 'undefined' && google.script && google.script.run);
+function callGas(fn, ...args){
+  return new Promise((resolve, reject)=>{
+    if(!GAS){ return setTimeout(()=>resolve(demo(fn,args)), 2200); }
+    google.script.run.withSuccessHandler(resolve).withFailureHandler(e=>reject(e)) [fn](...args);
+  });
+}
+function demo(fn,a){
+  if(fn==='apiLogin'){
+    if(!a[0]) return {ok:false,message:'Không tìm thấy lớp.'};
+    if(a[1]==='000000') return {ok:false,message:'Mã PIN không đúng.'};
+    const names=['Nguyễn Ngọc Gia Bảo','Nguyễn Văn Bắc','Lê Đại Nam','Trần Mỹ Ngọc','Nguyễn Anh Quân','Võ Văn Thúy Sơn','Đoàn Duy Thịnh','Đoàn Viên An Thy','Trần Thanh Tuấn','Văn Ngọc Thảo Vy','Phạm Minh Khôi','Lý Thu Hà','Hoàng Gia Huy','Bùi Thanh Tâm','Đặng Quốc Việt','Ngô Bảo Châu','Dương Khánh Linh','Huỳnh Tấn Phát'];
+    return {ok:true,
+      cls:{name:'CƠ SỞ DỮ LIỆU',term:'HK1 2026-2027',code:a[0].toUpperCase(),size:18,teacher:'Nguyễn Đặng Thế Vinh',leader:'Lê Đại Nam'},
+      sessions:Array.from({length:15},(_,i)=>({n:i+1,label:`Buổi ${i+1} · tuần ${12+i}/10`})),
+      students:names.map((n,i)=>({mssv:'9748260'+(4231+i*37),name:n,cls:i%3?'26CNTT':'26CVM'}))};
+  }
+  return {ok:true,message:'Đã gửi điểm danh (chế độ xem thử).'};
+}
+
+/* ========================= ẢNH TỪ ASSETS LOCAL / GITHUB ========================= */
+const ASSET_BASE='assets/';
+const ASSETS=['front-noeyes','iris','front-closed','run-1','run-2','point','logo','cheer'];
+document.querySelectorAll('img[data-a]').forEach(i=>{i.src=ASSET_BASE+i.dataset.a+'.png'});
+ASSETS.forEach(n=>{const i=new Image();i.src=ASSET_BASE+n+'.png'});
+
+/* ========================= TIỆN ÍCH ========================= */
+const $=s=>document.querySelector(s);
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+function toast(m,ms=2600){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('on'),ms)}
+function show(id){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));$(id).classList.add('active')}
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ========================= CHẾ ĐỘ THIẾT BỊ & VIDEO MASCOT ========================= */
+let currentMode='laptop'; // 'laptop' | 'mobile'
+const videoStage=$('#videoStage');
+const vids={
+  cho:$('#vCho'), layLap:$('#vLayLap'), goLap:$('#vGoLap'), lapOk:$('#vLapOk'), lapBad:$('#vLapBad'),
+  layDt:$('#vLayDt'), bamDt:$('#vBamDt'), dtOk:$('#vDtOk'), dtBad:$('#vDtBad')
+};
+let curVid=vids.cho;
+
+function playClip(target, loop=false){
+  if(!target) return;
+  Object.values(vids).forEach(v=>{
+    if(v!==target){ v.classList.remove('curr'); v.pause(); }
+  });
+  target.loop=loop;
+  target.currentTime=0;
+  target.classList.add('curr');
+  target.play().catch(()=>{});
+  curVid=target;
+}
+
+function pickMode(mode){
+  currentMode=mode;
+  $('#picker').classList.remove('active');
+  $('#login').classList.add('active');
+
+  // Kích hoạt Video Stage Cinema
+  $('#mascot').classList.add('gone');
+  videoStage.classList.add('on');
+
+  if(mode==='laptop'){
+    $('#modePill').textContent='💻 Chế độ: Laptop (Bấm để đổi)';
+    playClip(vids.layLap);
+    vids.layLap.onended=()=>playClip(vids.cho,true);
+  } else {
+    $('#modePill').textContent='📱 Chế độ: Điện thoại (Bấm để đổi)';
+    playClip(vids.layDt);
+    vids.layDt.onended=()=>playClip(vids.cho,true);
+  }
+}
+
+function showPicker(){
+  $('#login').classList.remove('active');
+  $('#picker').classList.add('active');
+  videoStage.classList.remove('on');
+  $('#mascot').classList.remove('gone');
+}
+
+/* ========================= LINH VẬT TƯƠNG TÁC (CLAUDE LOGIC) ========================= */
+const mascot=$('#mascot'), irises=[...mascot.querySelectorAll('.ir')], hls=[...mascot.querySelectorAll('.hl')];
+function look(x,y){
+  const r=mascot.getBoundingClientRect();
+  const cx=r.left+r.width*.5, cy=r.top+r.height*.448;
+  let dx=x-cx, dy=y-cy; const d=Math.hypot(dx,dy)||1; const k=Math.min(1,d/200);
+  const px=dx/d*k*13, py=dy/d*k*11;
+  irises.forEach(i=>i.style.transform=`translate(calc(-50% + ${px}%),calc(-50% + ${py}%))`);
+  hls.forEach(h=>h.style.transform=`translate(${px*.5}%,${py*.5}%)`);
+}
+document.addEventListener('pointermove',e=>{ if(!typing && $('#login').classList.contains('active') && !running) look(e.clientX,e.clientY)});
+let typing=false, typingT, running=false, vidTypeTimer=null;
+
+function caretPoint(inp){
+  const r=inp.getBoundingClientRect();
+  const w=Math.min(inp.value.length*9.5,r.width-70);
+  return [r.left+44+w, r.top+r.height/2];
+}
+
+function onType(e){
+  const inp=e.target; typing=true; clearTimeout(typingT); typingT=setTimeout(()=>{typing=false},1400);
+  const [px,py]=caretPoint(inp); look(px,py);
+  mascot.classList.add('tilt'); mascot.classList.remove('idle');
+  clearTimeout(onType._t); onType._t=setTimeout(()=>{mascot.classList.remove('tilt');mascot.classList.add('idle')},1500);
+  if(e.inputType && e.inputType.startsWith('insert') && e.data) throwLetter(e.data,inp,px,py);
+
+  // KÍCH HOẠT VIDEO GÕ PHÍM KHI NGƯỜI DÙNG NHẬP
+  if(videoStage.classList.contains('on')){
+    if(currentMode==='laptop'){
+      playClip(vids.goLap,true);
+    } else {
+      playClip(vids.bamDt,true);
     }
+    clearTimeout(vidTypeTimer);
+    vidTypeTimer=setTimeout(()=>{
+      playClip(vids.cho,true);
+    },850);
+  }
+}
 
-    function selectDevice(device) {
-      selectedDevice = device;
-      document.getElementById('device-picker-screen').classList.add('hidden');
-      const loginScreen = document.getElementById('login-screen');
-      loginScreen.classList.add('active');
+let pawSide=0;
+function throwLetter(ch,inp,px,py){
+  pawSide^=1;
+  mascot.classList.remove('bounce'); void mascot.offsetWidth; mascot.classList.add('bounce');
+  if(reduce) return;
+  const m=mascot.getBoundingClientRect();
+  const sx=m.left+m.width*(pawSide?.36:.6), sy=m.top+m.height*.86;
+  const el=document.createElement('div'); el.className='flyletter';
+  el.textContent=inp.type==='password'?'•':ch; document.body.appendChild(el);
+  el.animate([
+    {transform:`translate(${sx}px,${sy}px) scale(1.5)`,opacity:1},
+    {transform:`translate(${(sx+px)/2}px,${Math.min(sy,py)-40}px) scale(1.2)`,opacity:1,offset:.5},
+    {transform:`translate(${px}px,${py-6}px) scale(.8)`,opacity:0}
+  ],{duration:560,easing:'ease-in'}).onfinish=()=>el.remove();
+}
 
-      const notice = document.getElementById('mode-notice');
-      if (device === 'laptop') {
-        notice.textContent = '💻 Chế độ máy tính: Mèo gõ laptop theo thời gian thực';
-        // Phát clip mở laptop rồi chuyển về clip chờ laptop
-        playVideo(videos.layLap);
-        videos.layLap.onended = () => {
-          playVideo(videos.cho, true);
-        };
-      } else {
-        notice.textContent = '📱 Chế độ điện thoại: Mèo nghiêng người cầm điện thoại bấm';
-        // Phát clip lấy điện thoại rồi chuyển về clip chờ
-        playVideo(videos.layDt);
-        videos.layDt.onended = () => {
-          playVideo(videos.cho, true);
-        };
-      }
+['classId','pin'].forEach(id=>{
+  const i=$('#'+id);
+  i.addEventListener('input',onType);
+  i.addEventListener('focus',()=>{const [px,py]=caretPoint(i);look(px,py)});
+});
+(function blinker(){ setTimeout(()=>{ if(!running){mascot.classList.add('blink');setTimeout(()=>mascot.classList.remove('blink'),140);} blinker()},2200+Math.random()*2600)})();
+$('#classId').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('#pin').focus()}});
+$('#pin').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,6)});
+
+(function(){const c=store.get('att_class'); if(c){$('#classId').value=c}})();
+
+/* ========================= ĐĂNG NHẬP ========================= */
+let session=null, runFlip;
+$('#loginForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const classId=$('#classId').value.trim(), pin=$('#pin').value.trim();
+  $('#errMsg').textContent='';
+  let bad=false;
+  if(!classId){flag('#classId');bad=true}
+  if(!/^\d{6}$/.test(pin)){flag('#pin');bad=true}
+  if(bad){$('#errMsg').textContent='Vui lòng nhập đủ mã lớp và mã PIN 6 số.';return}
+
+  setBusy(true);
+  const t0=Date.now();
+  let res;
+  try{ res=await callGas('apiLogin',classId,pin); }
+  catch(err){ res={ok:false,message:'Không kết nối được máy chủ. Thử lại sau.'}; }
+  const wait=Math.max(0,1600-(Date.now()-t0)); await new Promise(r=>setTimeout(r,wait));
+  setBusy(false);
+
+  if(!res||!res.ok){
+    $('#errMsg').textContent=(res&&res.message)||'Đăng nhập không thành công.';
+    if(videoStage.classList.contains('on')){
+      playClip(currentMode==='laptop'?vids.lapBad:vids.dtBad);
+      setTimeout(()=>playClip(vids.cho,true),1600);
     }
+    return;
+  }
 
-    function showDevicePicker() {
-      document.getElementById('login-screen').classList.remove('active');
-      document.getElementById('device-picker-screen').classList.remove('hidden');
-      playVideo(videos.cho, true);
-    }
+  // THÀNH CÔNG: PHÁT VIDEO ĂN MỪNG
+  if(videoStage.classList.contains('on')){
+    playClip(currentMode==='laptop'?vids.lapOk:vids.dtOk);
+  }
 
-    // XỬ LÝ GÕ PHÍM: PHÁT CLIP GÕ LAPTOP HOẶC BẤM ĐIỆN THOẠI
-    function onUserTyping() {
-      if (selectedDevice === 'laptop') {
-        playVideo(videos.goLap, true);
-      } else {
-        playVideo(videos.bamDt, true);
-      }
+  if($('#remember').checked) store.set('att_class',classId); else store.del('att_class');
+  session={classId,pin,...res};
+  setTimeout(startCyber, 600);
+});
 
-      clearTimeout(typingDebounceTimer);
-      // Khi dừng gõ quá 900ms thì chuyển về tư thế chờ
-      typingDebounceTimer = setTimeout(() => {
-        playVideo(videos.cho, true);
-      }, 900);
-    }
+function flag(sel){const el=$(sel);el.classList.add('err');setTimeout(()=>el.classList.remove('err'),700)}
+const runner=$('#runner'), flipper=$('#flipper'); let runAnim=null;
 
-    const classInput = document.getElementById('class-code');
-    const pinInput = document.getElementById('pin-code');
+function setBusy(on){
+  $('#goBtn').disabled=on; $('#goBtn').textContent=on?'Đang xử lý…':'Vào lớp →';
+  $('#loadMsg').classList.toggle('on',on); $('.card').classList.toggle('busy',on);
+  running=on;
+  
+  if(!videoStage.classList.contains('on')){
+    mascot.classList.toggle('gone',on);
+  }
+  runner.classList.toggle('on',on);
+  if(runAnim){runAnim.cancel();runAnim=null}
+  if(on){
+    mascot.classList.remove('tilt');
+    const span=Math.min(innerWidth*.5-90,150);
+    runAnim=runner.animate([{transform:`translateX(${-span}px)`},{transform:`translateX(${span}px)`}],{duration:1500,iterations:Infinity,direction:'alternate',easing:'ease-in-out'});
+    let right=true;
+    flipper.style.transform='scaleX(1)';
+    clearInterval(setBusy._t); setBusy._t=setInterval(()=>{right=!right;flipper.style.transform=right?'scaleX(1)':'scaleX(-1)'},1500);
+  } else { clearInterval(setBusy._t); }
+}
 
-    [classInput, pinInput].forEach(inp => {
-      inp.addEventListener('input', onUserTyping);
-      inp.addEventListener('focus', onUserTyping);
-    });
+/* ========================= CYBER ========================= */
+const cv=$('#fx'), ctx=cv.getContext('2d');
+let W,H,DPR,nodes=[],edges=[],t0c,bolts=[],rings=[],boost=0,fxRun=false,burstAt=0,pressed=false;
+function resize(){DPR=Math.min(2,devicePixelRatio||1);W=cv.width=innerWidth*DPR;H=cv.height=innerHeight*DPR;cv.style.width=innerWidth+'px';cv.style.height=innerHeight+'px'}
+addEventListener('resize',()=>{if(fxRun){resize();buildNet()}});
 
-    /* ========================================================
-       2. CANVAS TIA LỬA ĐIỆN & CHUYỂN CẢNH CYBER
-       ======================================================== */
-    const canvas = document.getElementById('lightning-canvas');
-    const ctx = canvas.getContext('2d');
-    let sparks = [];
+function buildNet(){
+  nodes=[];edges=[];
+  const n=Math.round(Math.min(90,Math.max(40,innerWidth*innerHeight/14000)));
+  const cx=W/2,cy=H/2,R=Math.hypot(W,H)/2;
+  for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,d=Math.pow(Math.random(),.7)*R;nodes.push({x:cx+Math.cos(a)*d,y:cy+Math.sin(a)*d,d,p:Math.random()*6})}
+  const lim=Math.min(W,H)*.26;
+  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){
+    const dx=nodes[i].x-nodes[j].x,dy=nodes[i].y-nodes[j].y; if(dx*dx+dy*dy<lim*lim)edges.push([i,j]);
+  }
+}
 
-    function resizeCanvas() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
+function bolt(x,y,ang,len){
+  const pts=[[x,y]];let cx=x,cy=y;const seg=18*DPR;
+  for(let d=0;d<len;d+=seg){ang+=(Math.random()-.5)*.9;cx+=Math.cos(ang)*seg;cy+=Math.sin(ang)*seg;pts.push([cx,cy])}
+  return {pts,born:performance.now(),life:700+Math.random()*400,speed:1800*DPR};
+}
 
-    class ElectricArc {
-      constructor(x, y, angle, speed, color) {
-        this.x = x; this.y = y;
-        this.vx = Math.cos(angle) * speed;
-        this.vy = Math.sin(angle) * speed;
-        this.color = color;
-        this.alpha = 1;
-        this.decay = Math.random() * 0.03 + 0.02;
-        this.length = Math.random() * 18 + 8;
-      }
-      update() { this.x += this.vx; this.y += this.vy; this.alpha -= this.decay; }
-      draw(c) {
-        if (this.alpha <= 0) return;
-        c.save();
-        c.globalAlpha = this.alpha;
-        c.strokeStyle = this.color;
-        c.lineWidth = 2.2;
-        c.shadowBlur = 10;
-        c.shadowColor = this.color;
-        c.beginPath();
-        c.moveTo(this.x, this.y);
-        c.lineTo(this.x - this.vx * (this.length / 4.5), this.y - this.vy * (this.length / 4.5));
-        c.stroke();
-        c.restore();
-      }
-    }
+function frame(now){
+  if(!fxRun) return;
+  const T=(now-t0c)/1000, cx=W/2, cy=H/2, R=Math.hypot(W,H)/2;
+  ctx.clearRect(0,0,W,H);
+  const reveal=Math.min(1,T/2.0)*R*1.05;
+  const bright=.45+boost*.9;
+  ctx.lineWidth=1.2*DPR; ctx.lineCap='round';
+  for(const [i,j] of edges){
+    const a=nodes[i],b=nodes[j]; const dm=Math.max(a.d,b.d); if(dm>reveal) continue;
+    const fl=.55+.45*Math.sin(T*3+a.p+b.p);
+    ctx.strokeStyle=`rgba(${80+boost*100|0},${190+boost*40|0},255,${Math.min(1,.28*fl*bright*1.6)})`;
+    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+  }
+  for(const n of nodes){ if(n.d>reveal) continue;
+    const fl=.5+.5*Math.sin(T*4+n.p);
+    ctx.fillStyle=`rgba(150,225,255,${Math.min(1,(.4+.5*fl)*bright*1.3)})`;
+    ctx.beginPath();ctx.arc(n.x,n.y,(1.8+boost*1.5)*DPR,0,7);ctx.fill();
+  }
+  const gr=ctx.createRadialGradient(cx,cy,0,cx,cy,Math.min(W,H)*.45);
+  gr.addColorStop(0,`rgba(59,130,246,${.25+boost*.35})`);gr.addColorStop(1,'rgba(59,130,246,0)');
+  ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);
+  for(const r of rings){const k=(now-r.born)/r.life; if(k>=1||k<0)continue;
+    ctx.strokeStyle=`rgba(147,220,255,${(1-k)*.9})`;ctx.lineWidth=(3+6*(1-k))*DPR;
+    ctx.beginPath();ctx.arc(cx,cy,k*R*1.1,0,7);ctx.stroke();}
+  rings=rings.filter(r=>now-r.born<r.life);
+  ctx.shadowColor='#60a5fa';ctx.shadowBlur=14*DPR;
+  for(const b of bolts){
+    const age=now-b.born; if(age>b.life) continue;
+    const reach=Math.min(b.pts.length,Math.ceil(age/1000*b.speed/(18*DPR)))+1;
+    const fade=1-age/b.life;
+    ctx.strokeStyle=`rgba(224,242,254,${fade})`;ctx.lineWidth=(2+2*fade)*DPR;
+    ctx.beginPath();ctx.moveTo(b.pts[0][0],b.pts[0][1]);
+    for(let i=1;i<Math.min(reach,b.pts.length);i++)ctx.lineTo(b.pts[i][0],b.pts[i][1]);
+    ctx.stroke();
+  }
+  ctx.shadowBlur=0; bolts=bolts.filter(b=>now-b.born<b.life);
+  boost*=pressed?.99:.965; if(boost<.01)boost=0;
+  requestAnimationFrame(frame);
+}
 
-    function burstPlasmaArcs(cx, cy) {
-      for (let i = 0; i < 48; i++) {
-        const angle = (Math.PI * 2 / 48) * i + (Math.random() - 0.5) * 0.25;
-        const speed = Math.random() * 9 + 4;
-        const color = Math.random() > 0.2 ? '#00f3ff' : '#ffffff';
-        sparks.push(new ElectricArc(cx, cy, angle, speed, color));
-      }
-    }
+function startCyber(){
+  show('#cyber'); $('#cyber').classList.remove('out','hide-hint');
+  $('#logoBtn').style.animation=''; $('#logoBtn').style.opacity='';
+  resize(); buildNet(); t0c=performance.now(); fxRun=true; bolts=[];rings=[];boost=0;burstAt=0;pressed=false;
+  requestAnimationFrame(frame);
+}
 
-    function loopSparks() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (let i = sparks.length - 1; i >= 0; i--) {
-        sparks[i].update();
-        sparks[i].draw(ctx);
-        if (sparks[i].alpha <= 0) sparks.splice(i, 1);
-      }
-      requestAnimationFrame(loopSparks);
-    }
-    requestAnimationFrame(loopSparks);
+const lb=$('#logoBtn'); let done=false;
+function press(){ if(done)return; pressed=true; lb.classList.add('down'); $('#cyber').classList.add('hide-hint'); boost=Math.max(boost,.5); }
+function release(){
+  if(done||!pressed)return; pressed=false; done=true; lb.classList.remove('down');
+  const now=performance.now(); burstAt=now; boost=1.4;
+  const cx=W/2,cy=H/2,R=Math.hypot(W,H)/2;
+  for(let i=0;i<22;i++)bolts.push(bolt(cx,cy,i/22*Math.PI*2+Math.random()*.3,R*(.9+Math.random()*.3)));
+  for(let i=0;i<3;i++)rings.push({born:now+i*160,life:1100});
+  lb.animate([{opacity:1,transform:'scale(1)',filter:'blur(0)'},{opacity:0,transform:'scale(1.6)',filter:'blur(8px)'}],{duration:900,delay:200,fill:'forwards',easing:'ease-in'});
+  setTimeout(()=>{$('#cyber').classList.add('out')},1300);
+  setTimeout(()=>{fxRun=false;show('#app');done=false;lb.getAnimations().forEach(a=>a.cancel());
+    $('#cyber').classList.remove('out');openApp()},2000);
+}
+lb.addEventListener('pointerdown',e=>{e.preventDefault();press()});
+addEventListener('pointerup',release);
+lb.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();press();setTimeout(release,160)}});
+lb.addEventListener('pointercancel',()=>{pressed=false;lb.classList.remove('down')});
 
-    /* ========================================================
-       3. LOGIC ĐĂNG NHẬP VÀ KÍCH HOẠT HIỆU ỨNG CYBER
-       ======================================================== */
-    const isGAS = typeof google !== 'undefined' && google.script && google.script.run;
-    function callGAS(funcName, ...args) {
-      return new Promise((resolve, reject) => {
-        if (!isGAS) {
-          setTimeout(() => {
-            if (funcName === 'apiLogin') {
-              const [cls, pin] = args;
-              if (pin === '000000') reject(new Error('Mã PIN không đúng!'));
-              else resolve({
-                ok: true, cls: cls || '241_71ITEC20203_01',
-                students: [
-                  { mssv: '21010001', name: 'Nguyễn Văn An' },
-                  { mssv: '21010002', name: 'Trần Thị Bích' },
-                  { mssv: '21010003', name: 'Lê Hoàng Cường' },
-                  { mssv: '21010004', name: 'Phạm Đức Duy' },
-                  { mssv: '21010005', name: 'Vũ Ngọc Hân' },
-                  { mssv: '21010006', name: 'Đặng Minh Khôi' },
-                  { mssv: '21010007', name: 'Bùi Gia Linh' },
-                  { mssv: '21010008', name: 'Hoàng Nhật Nam' }
-                ]
-              });
-            } else resolve({ ok: true });
-          }, 900);
-          return;
-        }
-        google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)[funcName](...args);
-      });
-    }
+/* ========================= ĐIỂM DANH ========================= */
+let marks={};
+function openApp(){
+  const s=session, c=s.cls||{};
+  $('#clsName').textContent=c.name||s.classId;
+  $('#clsMeta').innerHTML=[`${c.term||''} · ${c.code||s.classId} · Sĩ số ${(s.students||[]).length}`, c.teacher?`GV: ${c.teacher}`:'', c.leader?`Lớp trưởng: ${c.leader}`:''].filter(Boolean).join('<br>');
+  const sel=$('#session'); sel.innerHTML=(s.sessions||[{n:1,label:'Buổi 1'}]).map(x=>`<option value="${x.n}">${x.label}</option>`).join('');
+  $('#date').value=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
+  marks={}; setMode('study'); $('#q').value=''; render(); scrollTo(0,0);
+}
 
-    async function handleLogin(e) {
-      e.preventDefault();
-      const cls = classInput.value.trim(), pin = pinInput.value.trim();
-      const btn = document.getElementById('btn-login');
-      const notice = document.getElementById('loading-notice');
-      const errBox = document.getElementById('error-msg');
-      errBox.style.display = 'none';
-      btn.disabled = true;
-      notice.style.display = 'block';
+let mode='study';
+function setMode(m){mode=m;document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on',b.dataset.v===m));
+  $('#listArea').classList.toggle('hidden',m==='off'); updateSummary()}
+$('#seg').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setMode(b.dataset.v)});
+$('#session').addEventListener('change',()=>{updateSummary()});
 
-      try {
-        const res = await callGAS('apiLogin', cls, pin);
-        window.sessionData = res;
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function render(){
+  const q=$('#q').value.trim().toLowerCase(); const list=$('#list');
+  const arr=(session.students||[]).map((s,i)=>({...s,i})).filter(s=>!q||s.name.toLowerCase().includes(q)||String(s.mssv).includes(q));
+  list.innerHTML=arr.length?arr.map(s=>`
+    <div class="stu ${marks[s.mssv]||''}" data-id="${esc(s.mssv)}">
+      <div class="info"><div class="nm">${s.i+1}. ${esc(s.name)}</div><div class="id">${esc(s.mssv)} · ${esc(s.cls||'')}</div></div>
+      <button class="b-bad" data-a="bad">Không phép</button><button class="b-warn" data-a="warn">Có phép</button>
+    </div>`).join(''):'<div class="empty">Không tìm thấy sinh viên.</div>';
+  updateSummary();
+}
 
-        // Thành công: phát clip ăn mừng theo thiết bị
-        if (selectedDevice === 'laptop') {
-          playVideo(videos.lapOk);
-        } else {
-          playVideo(videos.dtOk);
-        }
+$('#list').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return; const row=b.closest('.stu'), id=row.dataset.id, a=b.dataset.a;
+  if(marks[id]===a) delete marks[id]; else marks[id]=a;
+  row.className='stu '+(marks[id]||''); updateSummary();
+});
 
-        // Sau đó kích hoạt chuyển cảnh Cyber
-        setTimeout(() => {
-          launchCyberSequence();
-        }, 1200);
+$('#q').addEventListener('input',render);
 
-      } catch (err) {
-        btn.disabled = false;
-        notice.style.display = 'none';
+function counts(){const total=(session.students||[]).length;let bad=0,warn=0;Object.values(marks).forEach(v=>v==='bad'?bad++:warn++);return{total,bad,warn,ok:total-bad-warn}}
+function updateSummary(){
+  if(!session)return; const c=counts(), n=$('#session').value||1;
+  $('#nOk').textContent=c.ok;$('#nBad').textContent=c.bad;$('#nWarn').textContent=c.warn;
+  $('#sumTop').textContent=`Buổi ${n} · ${mode==='study'?'Có học':'Giảng viên nghỉ'}`;
+  $('#sumBot').textContent=mode==='study'?`Có mặt ${c.ok}/${c.total} · Vắng ${c.bad+c.warn}`:'Không điểm danh buổi này';
+}
 
-        // Lỗi: phát clip bối rối / sai
-        if (selectedDevice === 'laptop') {
-          playVideo(videos.lapFail);
-        } else {
-          playVideo(videos.dtFail);
-        }
+$('#clearAll').addEventListener('click',()=>{marks={};render();toast('Đã bỏ chọn – cả lớp có mặt')});
+$('#reportWrong').addEventListener('click',async()=>{
+  const t=prompt('Mô tả điều sai trong danh sách lớp (thiếu/thừa sinh viên, sai tên…):'); if(!t)return;
+  try{await callGas('apiReportWrong',session.classId,t);toast('Đã gửi báo sai danh sách. Cảm ơn bạn!')}catch(e){toast('Gửi thất bại, thử lại sau.')}
+});
 
-        document.getElementById('login-card').classList.add('shake');
-        errBox.textContent = err.message || 'Mã lớp hoặc PIN không đúng!';
-        errBox.style.display = 'block';
+$('#sendBtn').addEventListener('click',async()=>{
+  const c=counts();
+  if(mode==='study' && !confirm(`Gửi điểm danh?\nCó mặt ${c.ok} · Không phép ${c.bad} · Có phép ${c.warn}`))return;
+  const btn=$('#sendBtn'); btn.disabled=true; btn.textContent='Đang gửi…';
+  const payload={classId:session.classId,pin:session.pin,session:+$('#session').value,date:$('#date').value,mode,
+    absent:Object.entries(marks).map(([mssv,v])=>({mssv,type:v==='bad'?'KP':'CP'}))};
+  try{const r=await callGas('apiSubmit',payload);
+    if(r&&r.ok) celebrate((r.message)||'Đã gửi điểm danh. Cảm ơn bạn!'); else toast((r&&r.message)||'Gửi không thành công',3200)}
+  catch(e){toast('Lỗi kết nối, chưa gửi được.')}
+  btn.disabled=false;btn.textContent='Gửi';
+});
 
-        setTimeout(() => {
-          document.getElementById('login-card').classList.remove('shake');
-          playVideo(videos.cho, true);
-        }, 1500);
-      }
-    }
-
-    function launchCyberSequence() {
-      document.getElementById('login-screen').classList.remove('active');
-      const cyberScreen = document.getElementById('cyber-portal-screen');
-      cyberScreen.classList.add('active');
-
-      const chipCircleDraw = document.getElementById('chip-circle-draw');
-      const chipElectricRing = document.getElementById('chip-electric-ring');
-      const logoInsideChip = document.getElementById('logo-inside-chip');
-      const centralLogoChip = document.getElementById('central-logo-chip');
-      const triTop = document.getElementById('tri-top');
-      const triBL = document.getElementById('tri-bl');
-      const triBR = document.getElementById('tri-br');
-      const vnOilSpread = document.getElementById('vn-oil-spread');
-      const btnEnter = document.getElementById('btn-enter-hub');
-
-      // 1. Logo SIU ở tâm Chip vẽ nét
-      setTimeout(() => {
-        chipCircleDraw.classList.add('draw');
-        logoInsideChip.classList.add('visible');
-      }, 300);
-
-      // 2. Tia lửa xoay quanh Logo Chip
-      setTimeout(() => {
-        chipElectricRing.classList.add('active');
-      }, 1900);
-
-      // 3. 3 Tam giác robot nén vào
-      setTimeout(() => pulseTri(triTop), 2400);
-      setTimeout(() => pulseTri(triBL), 2800);
-      setTimeout(() => pulseTri(triBR), 3200);
-
-      // 4. Chip nén và bùng nổ tia lửa điện
-      setTimeout(() => {
-        centralLogoChip.classList.add('pressed');
-        const r = centralLogoChip.getBoundingClientRect();
-        burstPlasmaArcs(r.left + r.width / 2, r.top + r.height / 2);
-        setTimeout(() => centralLogoChip.classList.remove('pressed'), 200);
-      }, 3600);
-
-      // 5. 4 Dây phóng điện tới 4 góc
-      setTimeout(() => {
-        document.getElementById('wire-tl').classList.add('charged');
-        document.getElementById('wire-tr').classList.add('charged');
-        document.getElementById('wire-bl').classList.add('charged');
-        document.getElementById('wire-br').classList.add('charged');
-      }, 4000);
-
-      // 6. Chữ VIỆT NAM loang vết dầu
-      setTimeout(() => {
-        vnOilSpread.classList.add('spread-active');
-      }, 5400);
-
-      // 7. Các góc bừng sáng
-      setTimeout(() => document.getElementById('corner-tl').classList.add('active'), 5800);
-      setTimeout(() => document.getElementById('corner-tr').classList.add('active'), 6100);
-      setTimeout(() => document.getElementById('corner-bl').classList.add('active'), 6400);
-      setTimeout(() => document.getElementById('corner-br').classList.add('active'), 6700);
-
-      // 8. Nút tiếp tục
-      setTimeout(() => btnEnter.classList.add('active'), 7200);
-    }
-
-    function pulseTri(el) {
-      el.classList.add('lit', 'pressed');
-      setTimeout(() => el.classList.remove('pressed'), 180);
-    }
-
-    function openAttendanceScreen() {
-      const cyberScreen = document.getElementById('cyber-portal-screen');
-      cyberScreen.style.opacity = '0';
-      setTimeout(() => {
-        cyberScreen.style.display = 'none';
-        const wrapper = document.getElementById('attendance-wrapper');
-        wrapper.style.display = 'flex';
-        initAttendance(window.sessionData || { cls: classInput.value });
-      }, 500);
-    }
-
-    /* ========================================================
-       4. ĐIỂM DANH SINH VIÊN
-       ======================================================== */
-    let studentData = [], attendanceMap = {};
-    function initAttendance(data) {
-      document.getElementById('select-date').valueAsDate = new Date();
-      document.getElementById('dash-class-name').textContent = `Lớp: ${data.cls}`;
-      studentData = data.students || [];
-      document.getElementById('dash-total').textContent = studentData.length;
-      renderStudents(studentData);
-      updateStats();
-    }
-
-    function renderStudents(list) {
-      const container = document.getElementById('student-list-container');
-      container.innerHTML = '';
-      list.forEach(s => {
-        const item = document.createElement('div');
-        item.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-bottom: 1px solid #f1f5f9;';
-        const st = attendanceMap[s.mssv] || '';
-        item.innerHTML = `
-          <div><div style="font-weight: 700; color: #0f172a;">${s.name}</div><div style="font-size: 12.5px; color: #64748b;">${s.mssv}</div></div>
-          <div style="display: flex; gap: 8px;">
-            <button class="btn-att kp ${st === 'KP' ? 'active' : ''}" onclick="toggleAtt('${s.mssv}', 'KP')">Không phép</button>
-            <button class="btn-att cp ${st === 'CP' ? 'active' : ''}" onclick="toggleAtt('${s.mssv}', 'CP')">Có phép</button>
-          </div>
-        `;
-        container.appendChild(item);
-      });
-    }
-
-    function toggleAtt(mssv, type) {
-      if (attendanceMap[mssv] === type) delete attendanceMap[mssv];
-      else attendanceMap[mssv] = type;
-      filterStudents();
-      updateStats();
-    }
-
-    function updateStats() {
-      let kp = 0, cp = 0;
-      Object.values(attendanceMap).forEach(v => { if (v === 'KP') kp++; if (v === 'CP') cp++; });
-      document.getElementById('stat-present').textContent = studentData.length - (kp + cp);
-      document.getElementById('stat-kp').textContent = kp;
-      document.getElementById('stat-cp').textContent = cp;
-    }
-
-    function filterStudents() {
-      const q = document.getElementById('search-student').value.toLowerCase().trim();
-      renderStudents(studentData.filter(s => s.name.toLowerCase().includes(q) || s.mssv.includes(q)));
-    }
-
-    function resetAllAbsent() { attendanceMap = {}; filterStudents(); updateStats(); }
-    function reportWrongList() {
-      const note = prompt('Nhập phản ánh:');
-      if (note) callGAS('apiReportWrong', classInput.value, note).then(() => alert('Đã gửi phản ánh!'));
-    }
-
-    async function submitAttendance() {
-      const absent = Object.keys(attendanceMap).map(mssv => ({ mssv, type: attendanceMap[mssv] }));
-      await callGAS('apiSubmit', { classCode: classInput.value, absent });
-      alert('🎉 Đã lưu điểm danh thành công!');
-    }
-
-    function logout() {
-      document.getElementById('attendance-wrapper').style.display = 'none';
-      document.getElementById('btn-login').disabled = false;
-      document.getElementById('loading-notice').style.display = 'none';
-      showDevicePicker();
-    }
-  </script>
+function celebrate(msg){const c=$('#cheer');$('#cheerMsg').textContent=msg;c.classList.add('on');clearTimeout(celebrate._t);celebrate._t=setTimeout(()=>c.classList.remove('on'),2800)}
+$('#cheer').addEventListener('click',()=>$('#cheer').classList.remove('on'));
+$('#logoutBtn').addEventListener('click',()=>{
+  if(!confirm('Đổi sang lớp khác?'))return; session=null; $('#pin').value=''; showPicker();
+});
+</script>
 </body>
 </html>
